@@ -1,0 +1,24 @@
+{% extends 'tracker_app/base.html' %}
+{% load currency_filters %}
+
+{% block title %}Đăng Ký - Quản Lý Chi Tiêu Sinh Viên PTIT{% endblock %}
+{% block content %}
+<div class="auth-page">
+<div class="auth-card">
+<div class="auth-ic"><i class="fa-solid fa-user-plus"></i></div>
+<h5 class="auth-t">Đăng ký tài khoản</h5>
+<form method="POST" action="{% url 'register' %}" id="regForm" novalidate>
+{% csrf_token %}
+<div class="mb-3"><label class="form-label">Họ và tên:</label><div class="inp"><i class="fa-regular fa-user"></i><input type="text" class="form-control" name="full_name" placeholder="Nguyễn Văn A" required></div></div>
+<div class="mb-3"><label class="form-label">Email:</label><div class="inp"><i class="fa-regular fa-envelope"></i><input type="email" class="form-control" name="email" placeholder="sinhvien@ptit.edu.vn" required></div></div>
+<div class="mb-3"><label class="form-label">Mật khẩu:</label><div class="inp"><i class="fa-solid fa-lock"></i><input type="password" class="form-control" name="password" placeholder="Tối thiểu 8 ký tự" required minlength="8"></div></div>
+<div class="mb-3"><label class="form-label">Xác nhận mật khẩu:</label><div class="inp"><i class="fa-solid fa-shield-halved"></i><input type="password" class="form-control" name="confirm_password" placeholder="Nhập lại mật khẩu" required></div></div>
+<button type="submit" class="btn btn-ptit auth-btn mt-2">Đăng ký</button>
+</form>
+<div class="auth-ft">Đã có tài khoản? <a href="{% url 'login' %}">Đăng nhập ngay</a></div>
+</div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>document.getElementById('regForm').addEventListener('submit',function(e){if(!this.checkValidity()){e.preventDefault();e.stopPropagation();}this.classList.add('was-validated');});</script>
+{% endblock %}

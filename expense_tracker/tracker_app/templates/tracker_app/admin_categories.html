@@ -1,0 +1,339 @@
+{% extends 'tracker_app/base.html' %}
+
+{% block title %}Quản Lý Danh Mục Hệ Thống | PTIT{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="breadcrumb-line">
+            <a href="{% url 'dashboard' %}"><i class="fa-solid fa-house"></i></a>
+            <i class="fa-solid fa-chevron-right"></i>
+            <span>Quản trị</span>
+            <i class="fa-solid fa-chevron-right"></i>
+            <span class="active">Danh mục hệ thống</span>
+        </p>
+        <h1 class="page-title">DANH MỤC HỆ THỐNG</h1>
+        <p class="page-sub">Quản lý danh mục mặc định cho toàn bộ người dùng</p>
+    </div>
+    <button class="btn btn-ptit" data-bs-toggle="modal" data-bs-target="#adminCatModal" data-action="add">
+        <i class="fa-solid fa-plus"></i> Thêm danh mục mới
+    </button>
+</section>
+
+<section class="content-card">
+    <div class="ptit-card-h">
+        <span class="sec-label"><i class="fa-solid fa-tags"></i> DANH SÁCH DANH MỤC MẶC ĐỊNH</span>
+        <span class="badge bg-light text-muted">{{ system_categories|length }} danh mục</span>
+    </div>
+    <div class="ptit-card-b ptit-table-wrapper">
+        {% if system_categories %}
+        <div class="table-responsive">
+            <table class="table transaction-table mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4" style="width:35%;">Danh mục</th>
+                        <th style="width:15%;">Loại</th>
+                        <th style="width:15%;">Icon</th>
+                        <th style="width:25%;">Mô tả</th>
+                        <th class="text-end" style="width:120px;">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in system_categories %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center gap-3">
+                                <div class="cat-icon-wrapper {% if cat.type == 'income' %}bg-success-subtle text-success{% else %}bg-danger-subtle text-danger{% endif %}">
+                                    {% if cat.icon_is_emoji %}{{ cat.icon }}{% else %}<i class="{{ cat.icon_css_class }}"></i>{% endif %}
+                                </div>
+                                <span class="fw-semibold text-dark">{{ cat.name }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if cat.type == 'income' %}
+                                <span class="badge bg-success-subtle text-success">
+                                    <i class="fa-solid fa-arrow-up me-1"></i>Thu nhập
+                                </span>
+                            {% else %}
+                                <span class="badge bg-danger-subtle text-danger">
+                                    <i class="fa-solid fa-arrow-down me-1"></i>Chi tiêu
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if cat.icon_is_emoji %}{{ cat.icon }}{% else %}<i class="{{ cat.icon_css_class }} text-primary"></i>{% endif %}
+                                <code class="text-muted small">{{ cat.icon|default:"fa-box" }}</code>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="text-muted small">{{ cat.description|default:"—" }}</span>
+                        </td>
+                        <td class="text-end">
+                            <div class="btn-group">
+                                <button type="button" class="btn btn-sm btn-outline-ptit edit-cat-btn" 
+                                        data-id="{{ cat.id }}"
+                                        data-name="{{ cat.name }}"
+                                        data-type="{{ cat.type }}"
+                                        data-icon="{{ cat.icon|default:'fa-box' }}"
+                                        data-description="{{ cat.description|default:'' }}"
+                                        title="Chỉnh sửa">
+                                    <i class="fa-solid fa-pen"></i>
+                                </button>
+                                <a href="{% url 'admin_delete_category' cat.id %}" 
+                                   class="btn btn-sm btn-outline-light" 
+                                   onclick="return confirm('Xóa danh mục hệ thống \"{{ cat.name }}\"?');"
+                                   title="Xóa">
+                                    <i class="fa-regular fa-trash-can"></i>
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fa-solid fa-tags fa-3x mb-3 text-secondary opacity-50"></i>
+            <h5 class="text-dark mb-1">Chưa có danh mục mặc định nào</h5>
+            <p class="text-muted mb-3">Thêm danh mục để người dùng có thể sử dụng ngay.</p>
+            <button class="btn btn-ptit" onclick="openAddAdminCategoryModal()">
+                <i class="fa-solid fa-plus me-1"></i> Tạo danh mục đầu tiên
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Modal Add/Edit System Category -->
+<div class="modal fade" id="adminCatModal" tabindex="-1" aria-labelledby="adminCatModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header bg-light border-0 py-3">
+                <h5 class="modal-title fw-bold" id="adminCatModalLabel">
+                    <i class="fa-solid fa-plus-circle text-primary me-2"></i>Thêm Danh Mục Hệ Thống
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{% url 'admin_save_category' %}" id="adminCatForm">
+                {% csrf_token %}
+                <input type="hidden" name="category_id" id="adminModalCatId" value="">
+                
+                <div class="modal-body p-4">
+                    <!-- Tên danh mục -->
+                    <div class="mb-3">
+                        <label for="adminModalCatName" class="form-label fw-semibold">Tên danh mục <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="adminModalCatName" name="name" placeholder="Ví dụ: Ăn uống, Tiền nhà..." required>
+                    </div>
+
+                    <!-- Loại danh mục -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Loại giao dịch <span class="text-danger">*</span></label>
+                        <div class="d-flex gap-2">
+                            <input type="radio" class="btn-check" name="type" id="adminTypeExpense" value="expense" checked>
+                            <label class="btn btn-outline-danger w-50 py-2 fw-semibold" for="adminTypeExpense">
+                                <i class="fa-solid fa-arrow-down me-1"></i> Chi tiêu
+                            </label>
+
+                            <input type="radio" class="btn-check" name="type" id="adminTypeIncome" value="income">
+                            <label class="btn btn-outline-success w-50 py-2 fw-semibold" for="adminTypeIncome">
+                                <i class="fa-solid fa-arrow-up me-1"></i> Thu nhập
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Icon Font Awesome với Icon Picker -->
+                    <div class="mb-3">
+                        <label for="adminModalCatIcon" class="form-label fw-semibold">Biểu tượng (Font Awesome 6)</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light"><i class="fa-solid fa-tag"></i></span>
+                            <input type="text" class="form-control" id="adminModalCatIcon" name="icon" placeholder="fa-utensils, fa-house, fa-bus..." value="fa-tag" required>
+                        </div>
+                        <div class="form-text small">Nhập class Font Awesome 6 (VD: <code>fa-utensils</code>, <code>fa-house</code>, <code>fa-bus</code>, <code>fa-wallet</code>, <code>fa-graduation-cap</code>). Xem thêm tại <a href="https://fontawesome.com/search" target="_blank" class="text-primary">Font Awesome Icons</a></div>
+                        
+                        <!-- Quick Icon Picker -->
+                        <div class="mt-2 d-flex flex-wrap gap-1 icon-quick-pick" id="iconQuickPick">
+                            {% for icon in common_icons %}
+                            <button type="button" class="btn btn-outline-light btn-sm icon-pick-btn" data-icon="{{ icon }}" title="{{ icon }}">
+                                <i class="fa-solid {{ icon }}"></i>
+                            </button>
+                            {% endfor %}
+                        </div>
+                    </div>
+
+                    <!-- Mô tả -->
+                    <div class="mb-2">
+                        <label for="adminModalCatDesc" class="form-label fw-semibold">Mô tả (Tùy chọn)</label>
+                        <textarea class="form-control" id="adminModalCatDesc" name="description" rows="2" placeholder="Mô tả mục đích của danh mục mặc định..."></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-light border-0 py-3">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-primary px-4 fw-semibold">
+                        <i class="fa-solid fa-check me-1"></i> Lưu Danh Mục
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const adminModalEl = document.getElementById('adminCatModal');
+    const adminCatModal = new bootstrap.Modal(adminModalEl);
+    const iconInput = document.getElementById('adminModalCatIcon');
+    const iconPicker = document.getElementById('iconQuickPick');
+    const adminCatForm = document.getElementById('adminCatForm');
+
+    // Icon quick pick
+    if (iconPicker) {
+        iconPicker.querySelectorAll('.icon-pick-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                iconInput.value = this.dataset.icon;
+                iconInput.focus();
+                // Highlight selected
+                iconPicker.querySelectorAll('.icon-pick-btn').forEach(b => b.classList.remove('active', 'btn-primary'));
+                this.classList.add('active', 'btn-primary');
+            });
+        });
+    }
+
+    // Edit button delegation
+    document.addEventListener('click', function(e) {
+        const editBtn = e.target.closest('.edit-cat-btn');
+        if (editBtn) {
+            openEditAdminCategoryModal(
+                editBtn.dataset.id,
+                editBtn.dataset.name,
+                editBtn.dataset.type,
+                editBtn.dataset.icon,
+                editBtn.dataset.description
+            );
+        }
+    });
+
+    // Handle modal show event - reset form for "Add new" 
+    adminModalEl.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const modalTitle = document.getElementById('adminCatModalLabel');
+        
+        // If triggered by "Add new" button (has data-action="add")
+        if (button && button.dataset.action === 'add') {
+            modalTitle.innerHTML = '<i class="fa-solid fa-plus-circle text-primary me-2"></i>Thêm Danh Mục Hệ Thống';
+            document.getElementById('adminModalCatId').value = '';
+            document.getElementById('adminModalCatName').value = '';
+            document.getElementById('adminModalCatIcon').value = 'fa-tag';
+            document.getElementById('adminModalCatDesc').value = '';
+            document.getElementById('adminTypeExpense').checked = true;
+            
+            // Reset icon picker highlight
+            if (iconPicker) {
+                iconPicker.querySelectorAll('.icon-pick-btn').forEach(b => b.classList.remove('active', 'btn-primary'));
+            }
+        }
+    });
+
+    // Edit button delegation
+    document.addEventListener('click', function(e) {
+        const editBtn = e.target.closest('.edit-cat-btn');
+        if (editBtn) {
+            openEditAdminCategoryModal(
+                editBtn.dataset.id,
+                editBtn.dataset.name,
+                editBtn.dataset.type,
+                editBtn.dataset.icon,
+                editBtn.dataset.description
+            );
+        }
+    });
+
+    function openEditAdminCategoryModal(id, name, type, icon, desc) {
+        document.getElementById('adminCatModalLabel').innerHTML = '<i class="fa-solid fa-pen-to-square text-primary me-2"></i>Chỉnh Sửa Danh Mục Hệ Thống';
+        document.getElementById('adminModalCatId').value = id;
+        document.getElementById('adminModalCatName').value = name;
+        document.getElementById('adminModalCatIcon').value = icon;
+        document.getElementById('adminModalCatDesc').value = desc;
+
+        if (type === 'income') {
+            document.getElementById('adminTypeIncome').checked = true;
+        } else {
+            document.getElementById('adminTypeExpense').checked = true;
+        }
+
+        // Highlight icon in picker
+        if (iconPicker) {
+            iconPicker.querySelectorAll('.icon-pick-btn').forEach(b => b.classList.remove('active', 'btn-primary'));
+            const selectedBtn = iconPicker.querySelector('[data-icon="' + icon + '"]');
+            if (selectedBtn) selectedBtn.classList.add('active', 'btn-primary');
+        }
+
+        adminCatModal.show();
+    }
+
+    // Reset form on modal hidden
+    adminModalEl.addEventListener('hidden.bs.modal', function () {
+        adminCatForm.reset();
+        document.getElementById('adminModalCatId').value = '';
+        document.getElementById('adminTypeExpense').checked = true;
+        if (iconPicker) {
+            iconPicker.querySelectorAll('.icon-pick-btn').forEach(b => b.classList.remove('active', 'btn-primary'));
+        }
+    });
+    
+    // Form submit handler - ensure icon value is set
+    adminCatForm.addEventListener('submit', function(e) {
+        // Ensure icon input has a value
+        const iconInput = document.getElementById('adminModalCatIcon');
+        if (!iconInput.value.trim()) {
+            iconInput.value = 'fa-tag';
+        }
+    });
+});
+</script>
+
+<style>
+.cat-icon-wrapper {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+}
+.icon-quick-pick {
+    max-height: 120px;
+    overflow-y: auto;
+}
+.icon-pick-btn {
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    border-radius: 8px;
+    transition: all 0.15s;
+}
+.icon-pick-btn:hover {
+    background: var(--red-soft);
+    border-color: var(--red);
+    color: var(--red);
+}
+.icon-pick-btn.active {
+    background: var(--red);
+    border-color: var(--red);
+    color: #fff;
+}
+@media (max-width: 576px) {
+    .modal-dialog { margin: 0.5rem; }
+    .modal-body { padding: 1.5rem; }
+}
+</style>
+{% endblock %}

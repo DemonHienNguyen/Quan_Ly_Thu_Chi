@@ -1,0 +1,6 @@
+Django>=4.2,<5.0
+python-decouple>=3.8
+bcrypt>=4.0
+PyJWT>=2.8
+pywebview>=5.4
+pyinstaller>=6.12

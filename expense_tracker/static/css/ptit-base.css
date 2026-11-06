@@ -1,0 +1,24 @@
+:root{--r:#BE1E2D;--rd:#9E1623;--rs:#FDF0F1;--bg:#F2F4F7;--bd:#E5E7EB;--bd2:#D1D5DB;--ink:#1F2937;--tt:#111827;--mt:#6B7280;--sb:#9CA3AF;--gn:#178A50;--gnbg:#E7F6ED}
+body{font-family:'Inter','Be Vietnam Pro',Segoe UI,Roboto,Arial,sans-serif!important;background:var(--bg)!important;color:var(--ink)}
+.ptit-topbar{background:#fff;border-bottom:1px solid var(--bd);padding:.65rem 0;position:sticky;top:0;z-index:1030}
+.ptit-brand{display:flex;align-items:center;gap:.7rem;text-decoration:none}
+.ptit-logo{background:var(--r);color:#fff;font-weight:800;font-size:.92rem;padding:.34rem .6rem;border-radius:7px;letter-spacing:.04em}
+.ptit-div{width:1px;height:28px;background:var(--bd)}
+.ptit-brand-title{font-weight:700;font-size:.9rem;color:var(--tt);margin:0}
+.ptit-brand-sub{font-size:.72rem;color:var(--mt);margin:0}
+.ptit-user{font-size:.84rem;color:var(--mt);display:flex;align-items:center;gap:.4rem}
+.ptit-nav{background:#fff;border-bottom:1px solid var(--bd)}
+.ptit-nav .nav-link{color:var(--mt);font-weight:600;font-size:.87rem;padding:.72rem .15rem;margin-right:1.3rem;border-bottom:2px solid transparent;border-radius:0}
+.ptit-nav .nav-link:hover{color:var(--tt)}
+.ptit-nav .nav-link.active{color:var(--r);border-bottom-color:var(--r)}
+.ptit-crumb{font-size:.76rem;color:var(--sb);margin-bottom:.15rem}
+.ptit-h1{font-weight:800;font-size:1.4rem;color:var(--tt);text-transform:uppercase;margin:0}
+.card{background:#fff!important;border:1px solid var(--bd)!important;border-radius:10px!important;box-shadow:0 1px 2px rgba(16,24,40,.06)!important}
+.card-h{display:flex;align-items:center;gap:.5rem;font-weight:800;font-size:.86rem;text-transform:uppercase;color:var(--tt);padding:.9rem 1.25rem;border-bottom:1px solid var(--bd)}
+.ptit-ic{width:26px;height:26px;border-radius:7px;background:var(--rs);color:var(--r);display:inline-flex;align-items:center;justify-content:center;font-size:.78rem}
+.btn-ptit,.btn-primary{background:var(--r)!important;border-color:var(--r)!important;color:#fff!important;font-weight:700!important;border-radius:8px!important;font-size:.87rem!important}
+.btn-ptit:hover,.btn-primary:hover{background:var(--rd)!important;border-color:var(--rd)!important}
+.form-label{font-size:.82rem;font-weight:600;color:var(--tt)}
+.form-control,.form-select{border:1px solid var(--bd2)!important;border-radius:8px!important;font-size:.9rem!important}
+.form-control:focus,.form-select:focus{border-color:var(--r)!important;box-shadow:0 0 0 3px rgba(190,30,45,.12)!important}
+input[type=radio],input[type=checkbox]{accent-color:var(--r)}

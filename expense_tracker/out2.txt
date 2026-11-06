@@ -1,0 +1,255 @@
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+Found 7 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: humanize, messages, staticfiles
+  Apply all migrations: admin, auth, contenttypes, sessions, tracker_app
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying auth.0001_initial... OK
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying sessions.0001_initial... OK
+  Applying tracker_app.0001_initial... OK
+System check identified no issues (0 silenced).
+test_tc01_duplicate_email_registration (tracker_app.tests.ExpenseTrackerTestCase.test_tc01_duplicate_email_registration)
+TC01: Đăng ký tài khoản với email đã tồn tại trong DB -> Từ chối báo lỗi. ... ERROR
+test_tc02_negative_transaction_amount (tracker_app.tests.ExpenseTrackerTestCase.test_tc02_negative_transaction_amount)
+TC02: Nhập giao dịch với số tiền âm hoặc <= 0 -> Bị từ chối. ... ok
+test_tc03_rbac_security_cross_user_isolation (tracker_app.tests.ExpenseTrackerTestCase.test_tc03_rbac_security_cross_user_isolation)
+TC03: Bảo mật / RBAC: Sinh viên A cố tình sửa/xóa giao dịch của Sinh viên B -> Bị chặn 403. ... ok
+test_tc04_budget_warning_80_percent_alert (tracker_app.tests.ExpenseTrackerTestCase.test_tc04_budget_warning_80_percent_alert)
+TC04: Ngân sách & Cảnh báo: Đặt hạn mức 1.000.000đ, thêm chi 850.000đ -> Kích hoạt cảnh báo 80% (Warning). ... ok
+test_tc05_budget_critical_100_percent_alert (tracker_app.tests.ExpenseTrackerTestCase.test_tc05_budget_critical_100_percent_alert)
+TC05: Ngân sách & Cảnh báo: Tiếp tục thêm chi 200.000đ (tổng 1.050.000đ) -> Kích hoạt cảnh báo 100% (Critical). ... ok
+test_tc06_performance_response_time (tracker_app.tests.ExpenseTrackerTestCase.test_tc06_performance_response_time)
+TC06: Hiệu năng (Performance): Thời gian phản hồi Dashboard < 1.0 giây (<= 1000ms). ... ERROR
+test_tc07_income_transaction_and_type_check (tracker_app.tests.ExpenseTrackerTestCase.test_tc07_income_transaction_and_type_check)
+TC07: Đăng ký khoản Thu nhập qua view save_transaction -> Lưu đúng type=INCOME và hiển thị đúng. ... ok
+
+======================================================================
+ERROR: test_tc01_duplicate_email_registration (tracker_app.tests.ExpenseTrackerTestCase.test_tc01_duplicate_email_registration)
+TC01: Đăng ký tài khoản với email đã tồn tại trong DB -> Từ chối báo lỗi.
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "d:\QuanLyThuChi\expense_tracker\tracker_app\tests.py", line 55, in test_tc01_duplicate_email_registration
+    response = self.client.post(reverse('register'), {
+        'full_name': 'Người Dùng Trùng Email',
+    ...<2 lines>...
+        'confirm_password': 'Password@789',
+    })
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\test\client.py", line 951, in post
+    response = super().post(
+        path,
+    ...<4 lines>...
+        **extra,
+    )
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\test\client.py", line 482, in post
+    return self.generic(
+           ~~~~~~~~~~~~^
+        "POST",
+        ^^^^^^^
+    ...<5 lines>...
+        **extra,
+        ^^^^^^^^
+    )
+    ^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\test\client.py", line 609, in generic
+    return self.request(**r)
+           ~~~~~~~~~~~~^^^^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\test\client.py", line 894, in request
+    self.check_exception(response)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\test\client.py", line 741, in check_exception
+    raise exc_value
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "d:\QuanLyThuChi\expense_tracker\tracker_app\views.py", line 91, in register_view
+    return render(request, 'tracker_app/login.html', {'show_register_tab': True})
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\loader.py", line 62, in render_to_string
+    return template.render(context, request)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\backends\django.py", line 61, in render
+    return self.template.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 175, in render
+    return self._render(context)
+           ~~~~~~~~~~~~^^^^^^^^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\test\utils.py", line 112, in instrumented_test_render
+    return self.nodelist.render(context)
+           ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 1005, in render
+    return SafeString("".join([node.render_annotated(context) for node in self]))
+                               ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 966, in render_annotated
+    return self.render(context)
+           ~~~~~~~~~~~^^^^^^^^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\loader_tags.py", line 132, in render
+    compiled_parent = self.get_parent(context)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\loader_tags.py", line 129, in get_parent
+    return self.find_template(parent, context)
+           ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\loader_tags.py", line 107, in find_template
+    template, origin = context.template.engine.find_template(
+                       ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        template_name,
+        ^^^^^^^^^^^^^^
+        skip=history,
+        ^^^^^^^^^^^^^
+    )
+    ^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\engine.py", line 157, in find_template
+    template = loader.get_template(name, skip=skip)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\loaders\cached.py", line 57, in get_template
+    template = super().get_template(template_name, skip)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\loaders\base.py", line 28, in get_template
+    return Template(
+        contents,
+    ...<2 lines>...
+        self.engine,
+    )
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 154, in __init__
+    self.nodelist = self.compile_nodelist()
+                    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 200, in compile_nodelist
+    return parser.parse()
+           ~~~~~~~~~~~~^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 513, in parse
+    raise self.error(token, e)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 511, in parse
+    compiled_result = compile_func(self, token)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\defaulttags.py", line 967, in do_if
+    nodelist = parser.parse(("endif",))
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 513, in parse
+    raise self.error(token, e)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 511, in parse
+    compiled_result = compile_func(self, token)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\loader_tags.py", line 232, in do_block
+    nodelist = parser.parse(("endblock",))
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 513, in parse
+    raise self.error(token, e)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 511, in parse
+    compiled_result = compile_func(self, token)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\loader_tags.py", line 226, in do_block
+    raise TemplateSyntaxError(
+        "'%s' tag with name '%s' appears more than once" % (bits[0], block_name)
+    )
+django.template.exceptions.TemplateSyntaxError: 'block' tag with name 'content' appears more than once
+
+======================================================================
+ERROR: test_tc06_performance_response_time (tracker_app.tests.ExpenseTrackerTestCase.test_tc06_performance_response_time)
+TC06: Hiệu năng (Performance): Thời gian phản hồi Dashboard < 1.0 giây (<= 1000ms).
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 505, in parse
+    compile_func = self.tags[command]
+                   ~~~~~~~~~^^^^^^^^^
+KeyError: 'static'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "d:\QuanLyThuChi\expense_tracker\tracker_app\tests.py", line 171, in test_tc06_performance_response_time
+    response = self.client.get(reverse('dashboard'))
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\test\client.py", line 930, in get
+    response = super().get(path, data=data, secure=secure, headers=headers, **extra)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\test\client.py", line 457, in get
+    return self.generic(
+           ~~~~~~~~~~~~^
+        "GET",
+        ^^^^^^
+    ...<6 lines>...
+        },
+        ^^
+    )
+    ^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\test\client.py", line 609, in generic
+    return self.request(**r)
+           ~~~~~~~~~~~~^^^^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\test\client.py", line 894, in request
+    self.check_exception(response)
+    ~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\test\client.py", line 741, in check_exception
+    raise exc_value
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\core\handlers\exception.py", line 55, in inner
+    response = get_response(request)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\core\handlers\base.py", line 197, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "d:\QuanLyThuChi\expense_tracker\tracker_app\auth_utils.py", line 53, in _wrapped_view
+    return view_func(request, *args, **kwargs)
+  File "d:\QuanLyThuChi\expense_tracker\tracker_app\views.py", line 265, in dashboard_view
+    return render(request, 'tracker_app/dashboard.html', context)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\shortcuts.py", line 24, in render
+    content = loader.render_to_string(template_name, context, request, using=using)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\loader.py", line 61, in render_to_string
+    template = get_template(template_name, using=using)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\loader.py", line 15, in get_template
+    return engine.get_template(template_name)
+           ~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\backends\django.py", line 33, in get_template
+    return Template(self.engine.get_template(template_name), self)
+                    ~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\engine.py", line 175, in get_template
+    template, origin = self.find_template(template_name)
+                       ~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\engine.py", line 157, in find_template
+    template = loader.get_template(name, skip=skip)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\loaders\cached.py", line 57, in get_template
+    template = super().get_template(template_name, skip)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\loaders\base.py", line 28, in get_template
+    return Template(
+        contents,
+    ...<2 lines>...
+        self.engine,
+    )
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 154, in __init__
+    self.nodelist = self.compile_nodelist()
+                    ~~~~~~~~~~~~~~~~~~~~~^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 200, in compile_nodelist
+    return parser.parse()
+           ~~~~~~~~~~~~^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 513, in parse
+    raise self.error(token, e)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 511, in parse
+    compiled_result = compile_func(self, token)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\loader_tags.py", line 293, in do_extends
+    nodelist = parser.parse()
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 513, in parse
+    raise self.error(token, e)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 511, in parse
+    compiled_result = compile_func(self, token)
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\loader_tags.py", line 232, in do_block
+    nodelist = parser.parse(("endblock",))
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 507, in parse
+    self.invalid_block_tag(token, command, parse_until)
+    ~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "d:\QuanLyThuChi\venv\Lib\site-packages\django\template\base.py", line 558, in invalid_block_tag
+    raise self.error(
+    ...<8 lines>...
+    )
+django.template.exceptions.TemplateSyntaxError: Invalid block tag on line 111: 'static', expected 'endblock'. Did you forget to register or load this tag?
+
+----------------------------------------------------------------------
+Ran 7 tests in 5.887s
+
+FAILED (errors=2)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...

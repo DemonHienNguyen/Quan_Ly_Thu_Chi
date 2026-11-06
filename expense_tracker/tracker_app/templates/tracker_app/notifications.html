@@ -1,0 +1,96 @@
+{% extends 'tracker_app/base.html' %}
+{% load humanize %}
+
+{% block title %}Thông Báo & Cảnh Báo | PTIT{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="breadcrumb-line"><a href="{% url 'dashboard' %}">Quản lý chi tiêu</a><i class="fa-solid fa-chevron-right"></i><span>Thông báo & Cảnh báo</span></p>
+        <h1 class="page-title">Thông báo & Cảnh báo</h1>
+    </div>
+    <div class="d-flex gap-2">
+        {% if unread_count > 0 %}
+        <form method="POST" action="{% url 'mark_all_notifications_read' %}">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-outline-ptit" onclick="return confirm('Đánh dấu tất cả là đã đọc?');">
+                <i class="fa-solid fa-check-double me-1"></i> Đọc tất cả
+            </button>
+        </form>
+        {% endif %}
+        <a href="{% url 'notifications' %}" class="btn btn-outline-ptit"><i class="fa-solid fa-rotate-left"></i> Làm mới</a>
+    </div>
+</section>
+
+<!-- Cảnh báo ngân sách đang hoạt động -->
+{% if active_budget_alert %}
+<div class="budget-notice mb-3">
+    <i class="fa-solid fa-triangle-exclamation"></i>
+    <span>{{ active_budget_alert.message }}</span>
+    <a href="{% url 'budget' %}" class="btn btn-ptit btn-sm">Xem ngân sách</a>
+</div>
+{% endif %}
+
+<!-- Danh sách thông báo -->
+<section class="content-card">
+    <div class="ptit-card-h">
+        <span class="sec-label"><i class="fa-solid fa-bell"></i> DANH SÁCH THÔNG BÁO</span>
+        <span class="badge bg-light text-muted">{{ notifications|length }} thông báo</span>
+    </div>
+    <div class="ptit-card-b ptit-table-wrapper">
+        {% if notifications %}
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4" style="width:15%;">Thời gian</th>
+                        <th style="width:12%;">Loại</th>
+                        <th>Nội dung</th>
+                        <th class="text-end" style="width:18%;">Trạng thái / Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for notif in notifications %}
+                    <tr class="{% if not notif.is_read %}fw-bold{% endif %}">
+                        <td class="ps-4">
+                            <div class="text-dark">{{ notif.created_at|date:"d/m/Y" }}</div>
+                            <div class="text-muted small">{{ notif.created_at|date:"H:i" }}</div>
+                        </td>
+                        <td>
+                            {% if notif.threshold_type == '100_PERCENT' %}
+                                <span class="badge bg-danger-subtle text-danger"><i class="fa-solid fa-triangle-exclamation me-1"></i>Vượt 100%</span>
+                            {% else %}
+                                <span class="badge bg-warning-subtle text-warning"><i class="fa-solid fa-bell me-1"></i>Cảnh báo 80%</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="{% if not notif.is_read %}text-dark{% else %}text-muted{% endif %}">{{ notif.message }}</div>
+                        </td>
+                        <td class="text-end">
+                            {% if not notif.is_read %}
+                            <form method="POST" action="{% url 'mark_notification_read' notif.notification_id %}" style="display:inline;">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-outline-ptit" title="Đánh dấu đã đọc">
+                                    <i class="fa-solid fa-check-circle"></i> Đã đọc
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-check me-1"></i>Đã đọc</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fa-regular fa-bell-slash fa-3x mb-3 text-secondary opacity-50"></i>
+            <h5 class="text-dark mb-1">Chưa có thông báo nào</h5>
+            <p class="text-muted mb-0">Thông báo sẽ xuất hiện khi bạn vượt ngân sách hoặc có hoạt động quan trọng.</p>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+{% endblock %}

@@ -1,0 +1,39 @@
+.ptit-table{margin:0}.ptit-table thead th{background:#F9FAFB!important;color:#6B7280!important;font-size:.76rem!important;font-weight:600!important;border-bottom:1px solid #E5E7EB!important;padding:.72rem 1rem!important}
+.ptit-table tbody td{padding:.78rem 1rem!important;font-size:.87rem!important;border-bottom:1px solid #F1F3F5!important;vertical-align:middle}
+.ptit-table tbody tr:last-child td{border:0}.ptit-table tbody tr:hover{background:#FAFBFC}
+.badge-chi{background:#FDECEC;color:#C81E1E;font-weight:700;font-size:.74rem;padding:.26rem .62rem;border-radius:999px}
+.badge-thu{background:#E7F6ED;color:#178A50;font-weight:700;font-size:.74rem;padding:.26rem .62rem;border-radius:999px}
+.money-e{color:#111827;font-weight:700;white-space:nowrap}.money-i{color:#178A50;font-weight:700;white-space:nowrap}
+.auth-page{min-height:calc(100vh - 150px);display:flex;align-items:center;justify-content:center;padding:3rem 1rem}
+.auth-card{width:100%;max-width:430px;background:#fff;border:1px solid #E5E7EB;border-radius:14px;box-shadow:0 8px 30px rgba(16,24,40,.08);padding:2rem 2rem 1.4rem}
+.auth-ic{width:44px;height:44px;border-radius:10px;background:#FDF0F1;color:#BE1E2D;display:flex;align-items:center;justify-content:center;font-size:1.02rem;margin:0 auto .8rem}
+.auth-t{text-align:center;font-weight:800;font-size:1rem;text-transform:uppercase;margin-bottom:1.35rem}
+.auth-card .form-control{background:#F9FAFB!important}
+.auth-btn{width:100%;padding:.7rem!important;text-transform:uppercase;letter-spacing:.04em}
+.auth-ft{border-top:1px solid #E5E7EB;margin-top:1.25rem;padding-top:1rem;text-align:center;font-size:.83rem;color:#6B7280}
+.auth-ft a{color:#BE1E2D;font-weight:700;text-decoration:none}
+.inp{position:relative}.inp>i{position:absolute;left:.8rem;top:50%;transform:translateY(-50%);color:#ADB5BD;font-size:.83rem}
+.inp input{padding-left:2.15rem!important}.inp .tg{position:absolute;right:.7rem;top:50%;transform:translateY(-50%);color:#ADB5BD;background:none;border:0}
+.warn-box{background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:1rem 1.15rem;display:flex;gap:.9rem;align-items:flex-start}
+.warn-box .wi{width:36px;height:36px;border-radius:50%;background:#FEE2E2;color:#DC2626;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.warn-box h6{color:#991B1B;font-weight:800;font-size:.85rem;margin:0 0 .2rem;text-transform:uppercase}
+.warn-box p{color:#B91C1C;font-size:.85rem;margin:0}
+.sec-lb{font-size:.77rem;font-weight:700;color:#111827;text-transform:uppercase;letter-spacing:.04em;display:flex;align-items:center;gap:.4rem}
+.sec-lb i{color:#BE1E2D}.bp{height:10px;background:#E9ECEF;border-radius:999px;overflow:hidden}
+.bp>div{height:100%;background:#BE1E2D;border-radius:999px}.bp.g>div{background:#22C55E}.bp.o>div{background:#F59E0B}
+.bp-num{font-weight:800;font-size:1.9rem;color:#BE1E2D}.bp-num.safe{color:#178A50}
+.stat-p{background:#fff;border:1px solid #E5E7EB;border-radius:10px;padding:1.05rem 1.15rem;display:flex;gap:.9rem;align-items:center}
+.stat-p .si{width:44px;height:44px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1.08rem;flex-shrink:0}
+.stat-p small{color:#6B7280;font-size:.75rem;font-weight:700;text-transform:uppercase}
+.stat-p h4{margin:.15rem 0 0;font-weight:800;font-size:1.22rem}
+.footer-custom{margin-top:auto;background:#fff;border-top:1px solid #E5E7EB;color:#6B7280;padding:1rem 0;font-size:.84rem;text-align:center}
+.navbar-custom{background:#fff!important;border-bottom:1px solid #E5E7EB!important;box-shadow:none!important}
+.navbar-custom .navbar-brand{color:#111827!important}
+.ptit-brandlink{display:flex;align-items:center;gap:.65rem;text-decoration:none}
+.ptit-brandlink .ptit-brand-title{font-size:.88rem}
+.navbar-custom .navbar-toggler{border-color:#D1D5DB}.navbar-custom .navbar-toggler-icon{filter:invert(.4)}
+.navbar-custom .nav-link{color:#6B7280!important;font-weight:600!important;font-size:.86rem}
+.navbar-custom .nav-link:hover,.navbar-custom .nav-link.active{color:#BE1E2D!important;background:#FDF0F1!important}
+.footer-custom{background:#fff;border-top:1px solid #E5E7EB;color:#6B7280}
+.empty{text-align:center;padding:2.4rem 1rem;color:#6B7280}
+@media(max-width:768px){.ptit-brand-sub{display:none}.ptit-h1{font-size:1.12rem}.auth-card{padding:1.5rem 1.2rem}.bp-num{font-size:1.45rem}}

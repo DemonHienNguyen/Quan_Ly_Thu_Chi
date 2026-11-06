@@ -1,0 +1,326 @@
+{% extends 'tracker_app/base.html' %}
+{% load humanize l10n currency_filters %}
+
+{% block title %}Sổ giao dịch | PTIT{% endblock %}
+
+{% block content %}
+<section class="page-heading">
+    <div>
+        <p class="breadcrumb-line"><a href="{% url 'dashboard' %}">Quản lý chi tiêu</a><i class="fa-solid fa-chevron-right"></i><span>Sổ giao dịch</span></p>
+        <h1 class="page-title">Sổ giao dịch thu / chi</h1>
+        <p class="page-sub">Theo dõi và quản lý các khoản thu, chi của bạn.</p>
+    </div>
+    <a href="#transaction-form" class="btn btn-ptit"><i class="fa-solid fa-plus"></i> Thêm giao dịch mới</a>
+</section>
+
+<section class="transaction-summary" aria-label="Tổng hợp giao dịch theo bộ lọc">
+    <article class="transaction-summary-card">
+        <span class="transaction-summary-icon"><i class="fa-solid fa-arrow-trend-up"></i></span>
+        <div><span>Tổng thu</span><strong class="income-amount">{{ filtered_income|currency }}</strong></div>
+    </article>
+    <article class="transaction-summary-card">
+        <span class="transaction-summary-icon expense"><i class="fa-solid fa-arrow-trend-down"></i></span>
+        <div><span>Tổng chi</span><strong class="expense-amount">{{ filtered_expense|currency }}</strong></div>
+    </article>
+    <article class="transaction-summary-card">
+        <span class="transaction-summary-icon balance"><i class="fa-solid fa-scale-balanced"></i></span>
+        <div><span>Chênh lệch</span><strong class="{% if filtered_balance < 0 %}expense-amount{% else %}income-amount{% endif %}">{{ filtered_balance|currency }}</strong></div>
+    </article>
+</section>
+
+<section class="content-card transaction-list-card">
+    <form method="get" action="{% url 'transactions' %}" class="transaction-filters">
+        <div class="form-field">
+            <label for="filterMonth">Tháng</label>
+            <input class="form-control" id="filterMonth" type="month" name="month" value="{{ selected_month }}">
+        </div>
+        <div class="form-field">
+            <label for="filterCategory">Danh mục</label>
+            <select class="form-select" id="filterCategory" name="category">
+                <option value="">Tất cả danh mục</option>
+                {% for cat in categories %}
+                <option value="{{ cat.id }}" {% if selected_category == cat.id|stringformat:'s' %}selected{% endif %}>{{ cat.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-field">
+            <label for="filterType">Loại giao dịch</label>
+            <select class="form-select" id="filterType" name="type">
+                <option value="">Tất cả</option>
+                <option value="income" {% if selected_type == 'income' %}selected{% endif %}>Thu nhập</option>
+                <option value="expense" {% if selected_type == 'expense' %}selected{% endif %}>Chi tiêu</option>
+            </select>
+        </div>
+        <button class="btn btn-filter" type="submit"><i class="fa-solid fa-filter"></i> Áp dụng lọc</button>
+        <a class="transaction-filter-reset" href="{% url 'transactions' %}">Xóa lọc</a>
+    </form>
+    <div class="table-responsive">
+        <table class="table transaction-table mb-0">
+            <thead><tr><th>Ngày</th><th>Danh mục</th><th>Diễn giải / Ghi chú</th><th>Loại</th><th class="text-end">Số tiền (VND)</th><th class="text-end">Thao tác</th></tr></thead>
+            <tbody>
+                {% for transaction in transactions %}
+                <tr>
+                    <td>{{ transaction.transaction_date|date:"d/m/Y" }}</td>
+                    <td class="fw-semibold">{{ transaction.category.category_name }}</td>
+                    <td>{{ transaction.note|default:"—" }}</td>
+                    <td>{% if transaction.type == 'INCOME' %}<span class="transaction-type type-income">Thu</span>{% else %}<span class="transaction-type type-expense">Chi</span>{% endif %}</td>
+                    <td class="text-end amount-cell {% if transaction.type == 'INCOME' %}income-amount{% else %}expense-amount{% endif %}">{% if transaction.type == 'INCOME' %}+{% else %}-{% endif %}{{ transaction.amount|currency }}</td>
+                    <td class="text-end action-cell">
+                        <button type="button" class="icon-button edit-transaction" title="Chỉnh sửa" data-id="{{ transaction.transaction_id }}" data-type="{{ transaction.type|lower }}" data-amount="{{ transaction.amount|unlocalize }}" data-category="{{ transaction.category_id }}" data-date="{{ transaction.transaction_date|date:'Y-m-d' }}" data-note="{{ transaction.note|default:'' }}"><i class="fa-regular fa-pen-to-square"></i></button>
+                        <button class="icon-button delete-button open-transaction-delete" type="button" title="Xóa"
+                                data-delete-url="{% url 'delete_transaction' transaction.transaction_id %}"
+                                data-delete-name="{{ transaction.category.category_name }}"
+                                data-delete-amount="{{ transaction.amount|currency }}"><i class="fa-regular fa-trash-can"></i></button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="6" class="empty-row">Chưa có giao dịch trong khoảng thời gian này.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if page_obj.has_other_pages %}
+    <nav class="table-pagination" aria-label="Phân trang giao dịch">
+        {% if page_obj.has_previous %}<a href="?month={{ selected_month }}&amp;category={{ selected_category }}&amp;type={{ selected_type }}&amp;page={{ page_obj.previous_page_number }}">Trước</a>{% endif %}
+        <span>Trang {{ page_obj.number }} / {{ page_obj.paginator.num_pages }}</span>
+        {% if page_obj.has_next %}<a href="?month={{ selected_month }}&amp;category={{ selected_category }}&amp;type={{ selected_type }}&amp;page={{ page_obj.next_page_number }}">Tiếp</a>{% endif %}
+    </nav>
+    {% endif %}
+</section>
+
+<div class="modal fade" id="deleteTransactionModal" tabindex="-1" aria-labelledby="deleteTransactionModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg category-confirm-modal">
+            <div class="modal-header border-0 pb-0">
+                <span class="delete-confirm-icon"><i class="fa-regular fa-trash-can"></i></span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <h2 class="modal-title" id="deleteTransactionModalLabel">Xóa giao dịch?</h2>
+                <p>Bạn có chắc muốn xóa giao dịch <strong id="deleteTransactionName"></strong> trị giá <strong id="deleteTransactionAmount"></strong> không? Thao tác này không thể hoàn tác.</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Giữ lại</button>
+                <form method="post" id="deleteTransactionForm">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger"><i class="fa-regular fa-trash-can me-1"></i> Xóa giao dịch</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="content-card transaction-form-card" id="transaction-form">
+    <div class="card-title-row"><span class="form-title-icon"><i class="fa-regular fa-pen-to-square"></i></span><h2 id="transactionFormTitle">Form nhập giao dịch</h2></div>
+    <form method="post" action="{% url 'save_transaction' %}" class="transaction-form" id="transactionForm">
+        {% csrf_token %}
+        <input type="hidden" name="transaction_id" id="transactionId">
+        <fieldset class="transaction-type-select">
+            <legend>Loại giao dịch:</legend>
+            <label><input type="radio" name="type" value="expense" checked> Chi tiêu</label>
+            <label><input type="radio" name="type" value="income"> Thu nhập</label>
+        </fieldset>
+        <div class="transaction-form-grid">
+            <div class="form-field">
+                <label for="transactionAmount">Số tiền (VND):</label>
+                <input class="form-control" type="text" inputmode="numeric" id="transactionAmount" name="amount" placeholder="Ví dụ: 50.000" required autocomplete="off">
+            </div>
+            <div class="form-field">
+                <label for="transactionCategory">Danh mục:</label>
+                <div class="dropdown">
+                    <button class="btn btn-outline-secondary dropdown-toggle form-control text-start" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="transactionCategoryBtn">
+                        <span id="selectedCategoryIcon" class="transaction-category-icon" aria-hidden="true"></span>
+                        <span id="selectedCategoryText">Chọn danh mục</span>
+                    </button>
+                    <ul class="dropdown-menu dropdown-menu-end shadow-lg" aria-labelledby="transactionCategoryBtn" style="max-height: 250px; overflow-y: auto;">
+                        <li><a class="dropdown-item" href="#" data-value="">Chọn danh mục</a></li>
+                        {% for cat in categories %}
+                        <li><a class="dropdown-item" href="#" data-value="{{ cat.id }}" data-type="{{ cat.type }}" data-icon-class="{{ cat.icon_css_class }}" data-icon-emoji="{% if cat.icon_is_emoji %}{{ cat.icon }}{% endif %}">
+                            {% if cat.icon_is_emoji %}<span class="transaction-category-icon">{{ cat.icon }}</span>{% else %}<i class="transaction-category-icon {{ cat.icon_css_class }}" aria-hidden="true"></i>{% endif %}
+                            <span>{{ cat.name }}</span>
+                        </a></li>
+                        {% endfor %}
+                    </ul>
+                    <input type="hidden" name="category" id="transactionCategory">
+                </div>
+                <small class="category-type-hint" id="categoryTypeHint">Danh mục chi tiêu</small>
+            </div>
+            <div class="form-field">
+                <label for="transactionDate">Ngày thực hiện:</label>
+                <input class="form-control" type="date" id="transactionDate" name="date" required>
+            </div>
+            <div class="form-field note-field">
+                <label for="transactionNote">Ghi chú:</label>
+                <textarea class="form-control" id="transactionNote" name="note" rows="2" placeholder="Ví dụ: Mua sách giáo trình"></textarea>
+            </div>
+        </div>
+        <div class="form-actions">
+            <button type="button" class="btn btn-light" id="cancelEdit" hidden>Hủy chỉnh sửa</button>
+            <button type="submit" class="btn btn-ptit"><i class="fa-regular fa-floppy-disk"></i> Lưu giao dịch</button>
+        </div>
+    </form>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var form = document.getElementById('transactionForm');
+    var dateInput = document.getElementById('transactionDate');
+    var categoryBtn = document.getElementById('transactionCategoryBtn');
+    var categoryInput = document.getElementById('transactionCategory');
+    var categoryIcon = document.getElementById('selectedCategoryIcon');
+    var selectedCategoryText = document.getElementById('selectedCategoryText');
+    var categoryTypeHint = document.getElementById('categoryTypeHint');
+    var amountInput = document.getElementById('transactionAmount');
+    var typeRadios = form.querySelectorAll('input[name="type"]');
+    var categoryItems = document.querySelectorAll('#transactionCategoryBtn + .dropdown-menu .dropdown-item');
+    var date = new Date();
+    dateInput.value = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+
+    function formatCurrency(value) {
+        var parts = String(value).replace(/[^\d,]/g, '').split(',');
+        var integer = parts[0].replace(/^0+(?=\d)/, '');
+        var formattedInteger = integer.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        return parts.length > 1 ? formattedInteger + ',' + parts.slice(1).join('').slice(0, 2) : formattedInteger;
+    }
+
+    function formatStoredAmount(value) {
+        var parts = String(value).split('.');
+        var localizedValue = parts[0];
+        if (parts[1] && !/^0+$/.test(parts[1])) {
+            localizedValue += ',' + parts[1];
+        }
+        return formatCurrency(localizedValue);
+    }
+
+    function parseCurrency(value) {
+        return String(value).replace(/\./g, '').replace(',', '.').replace(/[^\d.]/g, '');
+    }
+
+    function updateSelectedCategory(item) {
+        var value = item ? item.dataset.value : '';
+        categoryInput.value = value;
+        selectedCategoryText.textContent = item && value
+            ? item.querySelector('span:last-child').textContent.trim()
+            : 'Chọn danh mục';
+        categoryIcon.className = 'transaction-category-icon';
+        categoryIcon.textContent = '';
+        if (item && value) {
+            if (item.dataset.iconEmoji) {
+                categoryIcon.textContent = item.dataset.iconEmoji;
+            } else if (item.dataset.iconClass) {
+                categoryIcon.className += ' ' + item.dataset.iconClass;
+            }
+        }
+        categoryBtn.setAttribute('aria-invalid', 'false');
+        categoryTypeHint.classList.remove('text-danger');
+    }
+
+    function filterCategories(type) {
+        var selectedItem = null;
+        var visibleCount = 0;
+        categoryItems.forEach(function(item) {
+            if (item.dataset.value === '') {
+                item.style.display = '';
+                return;
+            }
+            if (item.dataset.type === type) {
+                item.style.display = '';
+                visibleCount += 1;
+            } else {
+                item.style.display = 'none';
+            }
+            if (item.dataset.value === categoryInput.value && item.dataset.type === type) {
+                selectedItem = item;
+            }
+        });
+        categoryTypeHint.textContent = type === 'income' ? 'Danh mục thu nhập' : 'Danh mục chi tiêu';
+        categoryTypeHint.classList.remove('text-danger');
+        categoryItems.forEach(function(item) {
+            item.classList.toggle('active', selectedItem ? item === selectedItem : item.dataset.value === '');
+        });
+        updateSelectedCategory(selectedItem);
+        categoryTypeHint.textContent = type === 'income' ? 'Danh mục thu nhập' : 'Danh mục chi tiêu';
+        categoryBtn.disabled = visibleCount === 0;
+        categoryBtn.setAttribute('aria-label', visibleCount === 0
+            ? 'Không có danh mục phù hợp với loại giao dịch đã chọn'
+            : categoryTypeHint.textContent + (selectedItem ? ': ' + selectedItem.textContent.trim() : ': Chọn danh mục'));
+    }
+
+    typeRadios.forEach(function(radio) {
+        radio.addEventListener('change', function() {
+            filterCategories(this.value);
+        });
+    });
+
+    categoryItems.forEach(function(item) {
+        item.addEventListener('click', function(e) {
+            e.preventDefault();
+            updateSelectedCategory(this.dataset.value ? this : null);
+            var dropdown = bootstrap.Dropdown.getInstance(categoryBtn);
+            if (dropdown) dropdown.hide();
+            var checkedRadio = form.querySelector('input[name="type"]:checked');
+            if (checkedRadio) filterCategories(checkedRadio.value);
+        });
+    });
+
+    document.querySelectorAll('.edit-transaction').forEach(function (button) {
+        button.addEventListener('click', function () {
+            document.getElementById('transactionId').value = button.dataset.id;
+            amountInput.value = formatStoredAmount(button.dataset.amount);
+            document.getElementById('transactionDate').value = button.dataset.date;
+            document.getElementById('transactionNote').value = button.dataset.note;
+            form.querySelector('input[name="type"][value="' + button.dataset.type + '"]').checked = true;
+            categoryInput.value = button.dataset.category;
+            filterCategories(button.dataset.type);
+            document.getElementById('transactionFormTitle').textContent = 'Chỉnh sửa giao dịch';
+            document.getElementById('cancelEdit').hidden = false;
+            form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+
+    document.getElementById('cancelEdit').addEventListener('click', function () {
+        form.reset();
+        document.getElementById('transactionId').value = '';
+        document.getElementById('transactionFormTitle').textContent = 'Form nhập giao dịch';
+        this.hidden = true;
+        dateInput.value = [date.getFullYear(), String(date.getMonth() + 1).padStart(2, '0'), String(date.getDate()).padStart(2, '0')].join('-');
+        filterCategories(form.querySelector('input[name="type"]:checked').value);
+    });
+
+    amountInput.addEventListener('input', function () {
+        var cursorPosition = this.selectionStart;
+        var oldValue = this.value;
+        this.value = formatCurrency(oldValue);
+        var position = Math.max(0, cursorPosition + this.value.length - oldValue.length);
+        this.setSelectionRange(position, position);
+    });
+
+    form.addEventListener('submit', function (event) {
+        if (!categoryInput.value) {
+            event.preventDefault();
+            categoryBtn.setAttribute('aria-invalid', 'true');
+            categoryTypeHint.textContent = 'Vui lòng chọn một danh mục phù hợp.';
+            categoryTypeHint.classList.add('text-danger');
+            categoryBtn.focus();
+            return;
+        }
+        amountInput.value = parseCurrency(amountInput.value);
+    });
+
+    var transactionDeleteModal = new bootstrap.Modal(document.getElementById('deleteTransactionModal'));
+    var transactionDeleteForm = document.getElementById('deleteTransactionForm');
+    document.querySelectorAll('.open-transaction-delete').forEach(function (button) {
+        button.addEventListener('click', function () {
+            transactionDeleteForm.action = button.dataset.deleteUrl;
+            document.getElementById('deleteTransactionName').textContent = button.dataset.deleteName;
+            document.getElementById('deleteTransactionAmount').textContent = button.dataset.deleteAmount;
+            transactionDeleteModal.show();
+        });
+    });
+
+    filterCategories(form.querySelector('input[name="type"]:checked').value);
+});
+</script>
+{% endblock %}

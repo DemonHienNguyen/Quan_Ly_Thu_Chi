@@ -1,0 +1,307 @@
+{% extends 'tracker_app/base.html' %}
+{% load humanize l10n currency_filters %}
+
+{% block title %}Ngân sách | PTIT{% endblock %}
+
+{% block content %}
+<section class="budget-page">
+    <header class="budget-heading">
+        <div>
+            <p class="breadcrumb-line"><a href="{% url 'dashboard' %}">Quản lý chi tiêu</a><i class="fa-solid fa-chevron-right"></i><span>Ngân sách</span></p>
+            <h1 class="page-title">Kế hoạch ngân sách</h1>
+            <p class="page-sub">Đặt giới hạn chi tiêu và theo dõi tiến độ theo tháng.</p>
+        </div>
+        <form method="get" action="{% url 'budget' %}" class="budget-month-picker">
+            <label for="budgetMonth"><i class="fa-regular fa-calendar"></i> Tháng theo dõi</label>
+            <input class="form-control" id="budgetMonth" type="month" name="month" value="{{ current_month }}">
+            <button class="btn btn-ptit" type="submit">Xem tháng</button>
+        </form>
+    </header>
+
+    <section class="budget-summary-cards" aria-label="Tổng quan ngân sách tháng {{ current_month_display }}">
+        <article class="budget-summary-card">
+            <span class="budget-summary-icon"><i class="fa-solid fa-wallet"></i></span>
+            <div><span>Hạn mức tổng</span><strong>{{ total_monthly_budget|currency }}</strong></div>
+        </article>
+        <article class="budget-summary-card">
+            <span class="budget-summary-icon spent"><i class="fa-solid fa-receipt"></i></span>
+            <div><span>Đã chi trong tháng</span><strong>{{ overall_spent|currency }}</strong></div>
+        </article>
+        <article class="budget-summary-card">
+            <span class="budget-summary-icon {% if overall_remaining < 0 %}over{% else %}remaining{% endif %}"><i class="fa-solid fa-piggy-bank"></i></span>
+            <div><span>{% if not total_monthly_budget %}Chưa đặt hạn mức{% elif overall_remaining < 0 %}Đã vượt hạn mức{% else %}Còn có thể chi{% endif %}</span><strong>{% if total_monthly_budget %}{{ overall_remaining|currency }}{% else %}—{% endif %}</strong></div>
+        </article>
+    </section>
+
+    <section class="content-card budget-progress-card">
+        <div class="budget-progress-header">
+            <div>
+                <span class="budget-period-label">NGÂN SÁCH THÁNG {{ current_month_display }}</span>
+                <h2>Tiến độ chi tiêu tổng</h2>
+            </div>
+            <strong class="budget-percent {% if overall_percent >= 100 %}over-budget-text{% elif overall_percent >= 80 %}near-budget-text{% endif %}">{{ overall_percent }}%</strong>
+        </div>
+        <div class="budget-progress-summary">
+            <p>Đã sử dụng <strong>{{ overall_spent|currency }}</strong> trên <strong>{{ total_monthly_budget|currency }}</strong></p>
+            <p>{% if transaction_count %}{{ transaction_count }} giao dịch trong tháng{% else %}Chưa có giao dịch trong tháng{% endif %}</p>
+        </div>
+        <div class="budget-progress-track" role="progressbar" aria-label="Tiến độ ngân sách" aria-valuenow="{% if overall_percent > 100 %}100{% else %}{{ overall_percent }}{% endif %}" aria-valuemin="0" aria-valuemax="100">
+            <div class="{% if overall_percent >= 100 %}over-budget{% elif overall_percent >= 80 %}near-budget{% endif %}" style="width:{% if overall_percent > 100 %}100{% else %}{{ overall_percent }}{% endif %}%"></div>
+        </div>
+        {% if total_monthly_budget <= 0 %}
+        <p class="budget-inline-hint"><i class="fa-solid fa-circle-info"></i> Chưa có hạn mức tổng cho tháng này. Hãy thiết lập bên dưới để theo dõi tiến độ.</p>
+        {% elif overall_percent >= 80 %}
+        <p class="budget-inline-hint {% if overall_percent >= 100 %}critical{% endif %}"><i class="fa-solid fa-triangle-exclamation"></i> {% if overall_percent >= 100 %}Chi tiêu đã vượt hạn mức tháng này.{% else %}Bạn đang tiến gần đến hạn mức ngân sách.{% endif %}</p>
+        {% endif %}
+    </section>
+
+    <section class="budget-settings-grid">
+        <section class="content-card overall-budget-card">
+            <div class="card-title-row">
+                <span class="form-title-icon"><i class="fa-solid fa-sliders"></i></span>
+                <div><h2>Hạn mức tổng</h2><p>Áp dụng cho toàn bộ khoản chi trong tháng {{ current_month_display }}.</p></div>
+            </div>
+            <form method="post" action="{% url 'set_overall_budget' %}" class="overall-budget-form">
+                {% csrf_token %}
+                <input type="hidden" name="month" value="{{ current_month }}">
+                <div class="form-field">
+                    <label for="overallBudget">Ngân sách tối đa (VND)</label>
+                    <div class="budget-input-row">
+                        <input class="form-control" type="number" id="overallBudget" name="amount" min="1" max="9999999999999.99" step="0.01" value="{% if total_monthly_budget %}{{ total_monthly_budget|unlocalize }}{% endif %}" placeholder="Ví dụ: 5.000.000" required>
+                        <button class="btn btn-ptit" type="submit"><i class="fa-regular fa-floppy-disk"></i> Lưu hạn mức</button>
+                    </div>
+                </div>
+            </form>
+        </section>
+
+        <section class="content-card category-budget-form-card">
+            <div class="card-title-row">
+                <span class="form-title-icon"><i class="fa-solid fa-list-check"></i></span>
+                <div><h2 id="categoryBudgetFormTitle">Ngân sách danh mục</h2><p>Đặt hoặc cập nhật giới hạn cho một danh mục chi tiêu.</p></div>
+            </div>
+            <form method="post" action="{% url 'set_category_budget' %}" class="category-budget-form" id="categoryBudgetForm">
+                {% csrf_token %}
+                <input type="hidden" name="month" value="{{ current_month }}">
+                <div class="form-field">
+                    <label for="budgetCategoryBtn">Danh mục chi tiêu</label>
+                    <div class="dropdown">
+                        <button class="btn btn-outline-secondary dropdown-toggle form-control text-start budget-category-dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="budgetCategoryBtn" aria-haspopup="listbox" aria-required="true">
+                            <span id="selectedBudgetCategoryText">Chọn danh mục</span>
+                        </button>
+                        <ul class="dropdown-menu shadow-lg budget-category-menu" aria-labelledby="budgetCategoryBtn" role="listbox">
+                            <li><button class="dropdown-item" type="button" data-value="">Chọn danh mục</button></li>
+                        {% for category in expense_categories %}
+                            <li><button class="dropdown-item" type="button" data-value="{{ category.id }}">{{ category.name }}</button></li>
+                        {% endfor %}
+                        </ul>
+                        <input type="hidden" name="category" id="category">
+                    </div>
+                </div>
+                <div class="form-field">
+                    <label for="categoryBudgetAmount">Hạn mức (VND)</label>
+                    <input class="form-control" type="text" inputmode="numeric" id="categoryBudgetAmount" name="amount" placeholder="Ví dụ: 1.000.000" required autocomplete="off">
+                </div>
+                <div class="budget-category-actions">
+                    <button class="btn btn-ptit" type="submit"><i class="fa-regular fa-floppy-disk"></i> Lưu danh mục</button>
+                    <button class="btn btn-light" type="button" id="cancelCategoryBudgetEdit" hidden>Hủy sửa</button>
+                </div>
+            </form>
+        </section>
+    </section>
+
+    <section class="content-card category-budget-card">
+        <div class="card-title-row">
+            <div><h2>Hạn mức theo danh mục</h2><p>Tiến độ chi tiêu từng danh mục trong tháng {{ current_month_display }}.</p></div>
+            <span>{{ category_budgets|length }} danh mục</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table transaction-table budget-table mb-0">
+                <thead><tr><th>Danh mục</th><th>Hạn mức</th><th>Đã chi</th><th>Còn lại</th><th>Tiến độ</th><th class="text-end">Thao tác</th></tr></thead>
+                <tbody>
+                    {% for budget in category_budgets %}
+                    <tr>
+                        <td class="budget-category-name"><span aria-hidden="true">{% if budget.category.icon_is_emoji %}{{ budget.category.icon }}{% else %}<i class="{{ budget.category.icon_css_class }}"></i>{% endif %}</span><strong>{{ budget.category.name }}</strong></td>
+                        <td>{{ budget.amount|currency }}</td>
+                        <td>{{ budget.spent|currency }}</td>
+                        <td class="{% if budget.remaining < 0 %}expense-amount{% else %}income-amount{% endif %}">{{ budget.remaining|currency }}</td>
+                        <td class="budget-progress-cell">
+                            <div class="category-progress {% if budget.percentage >= 100 %}over-budget{% elif budget.percentage >= 80 %}near-budget{% endif %}" role="progressbar" aria-label="Tiến độ {{ budget.category.name }}" aria-valuenow="{% if budget.percentage > 100 %}100{% else %}{{ budget.percentage }}{% endif %}" aria-valuemin="0" aria-valuemax="100"><span style="width:{% if budget.percentage > 100 %}100{% else %}{{ budget.percentage }}{% endif %}%"></span></div>
+                            <small>{{ budget.percentage }}%</small>
+                        </td>
+                        <td class="text-end action-cell">
+                            <button type="button" class="icon-button edit-category-budget" title="Chỉnh sửa hạn mức" data-category="{{ budget.category.id }}" data-amount="{{ budget.amount|unlocalize }}"><i class="fa-regular fa-pen-to-square"></i></button>
+                            <button type="button" class="icon-button delete-button open-budget-delete-modal"
+                                    title="Xóa hạn mức"
+                                    data-delete-url="{% url 'delete_category_budget' budget.id %}"
+                                    data-delete-name="{{ budget.category.name }}">
+                                <i class="fa-regular fa-trash-can"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="6" class="empty-row">Chưa có hạn mức danh mục trong tháng này. Tạo hạn mức bằng biểu mẫu phía trên.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</section>
+
+<div class="modal fade" id="deleteCategoryBudgetModal" tabindex="-1" aria-labelledby="deleteCategoryBudgetModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg category-confirm-modal">
+            <div class="modal-header border-0 pb-0">
+                <span class="delete-confirm-icon"><i class="fa-regular fa-trash-can"></i></span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <h2 class="modal-title" id="deleteCategoryBudgetModalLabel">Xóa hạn mức danh mục?</h2>
+                <p>Bạn có chắc muốn xóa hạn mức của danh mục <strong id="deleteCategoryBudgetName"></strong> không?</p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Giữ lại</button>
+                <form method="post" id="deleteCategoryBudgetForm">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger"><i class="fa-regular fa-trash-can me-1"></i> Xóa hạn mức</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var deleteBudgetModalElement = document.getElementById('deleteCategoryBudgetModal');
+    var deleteBudgetModal = new bootstrap.Modal(deleteBudgetModalElement);
+    var deleteBudgetForm = document.getElementById('deleteCategoryBudgetForm');
+    var deleteBudgetName = document.getElementById('deleteCategoryBudgetName');
+
+    document.querySelectorAll('.open-budget-delete-modal').forEach(function (button) {
+        button.addEventListener('click', function () {
+            deleteBudgetForm.action = button.dataset.deleteUrl;
+            deleteBudgetName.textContent = button.dataset.deleteName;
+            deleteBudgetModal.show();
+        });
+    });
+
+    var form = document.getElementById('categoryBudgetForm');
+    var category = document.getElementById('category');
+    var amount = document.getElementById('categoryBudgetAmount');
+    var title = document.getElementById('categoryBudgetFormTitle');
+    var cancel = document.getElementById('cancelCategoryBudgetEdit');
+    var categoryButton = document.getElementById('budgetCategoryBtn');
+    var categoryText = document.getElementById('selectedBudgetCategoryText');
+    var categoryItems = document.querySelectorAll('.budget-category-menu [data-value]');
+
+    function selectCategory(value, text) {
+        category.value = value;
+        categoryText.textContent = text || 'Chọn danh mục';
+        categoryButton.classList.remove('is-invalid');
+        categoryItems.forEach(function (item) {
+            item.classList.toggle('active', item.dataset.value === value && value !== '');
+        });
+    }
+
+    categoryItems.forEach(function (item) {
+        item.addEventListener('click', function () {
+            selectCategory(item.dataset.value, item.textContent.trim());
+            var dropdown = bootstrap.Dropdown.getInstance(categoryButton);
+            if (dropdown) dropdown.hide();
+        });
+    });
+
+    form.addEventListener('submit', function (event) {
+        if (!category.value) {
+            event.preventDefault();
+            categoryButton.classList.add('is-invalid');
+            categoryButton.focus();
+        }
+    });
+
+    document.querySelectorAll('.edit-category-budget').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var selectedItem = document.querySelector('.budget-category-menu [data-value="' + button.dataset.category + '"]');
+            selectCategory(button.dataset.category, selectedItem ? selectedItem.textContent.trim() : '');
+            amount.value = button.dataset.amount;
+            title.textContent = 'Cập nhật ngân sách danh mục';
+            cancel.hidden = false;
+            form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            amount.focus({ preventScroll: true });
+        });
+    });
+
+    cancel.addEventListener('click', function () {
+        form.reset();
+        selectCategory('', '');
+        title.textContent = 'Ngân sách danh mục';
+        cancel.hidden = true;
+    });
+
+    // Format currency input for budget amount
+    var budgetAmountInput = document.getElementById('categoryBudgetAmount');
+    
+    function formatCurrency(value) {
+        var numericValue = value.replace(/[^\d]/g, '');
+        if (!numericValue) return '';
+        return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+    
+    function parseCurrency(formattedValue) {
+        return formattedValue.replace(/[^\d]/g, '');
+    }
+    
+    var budgetAmountInput = document.getElementById('categoryBudgetAmount');
+    
+    function formatCurrency(value) {
+        var numericValue = value.replace(/[^\d]/g, '');
+        if (!numericValue) return '';
+        return numericValue.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    }
+    
+    function parseCurrency(formattedValue) {
+        return formattedValue.replace(/[^\d]/g, '');
+    }
+    
+    // Format on input
+    budgetAmountInput.addEventListener('input', function(e) {
+        var cursorPos = this.selectionStart;
+        var oldValue = this.value;
+        var formattedValue = formatCurrency(this.value);
+        this.value = formattedValue;
+        
+        // Adjust cursor position
+        var newLength = formattedValue.length;
+        var oldLength = oldValue.length;
+        var diff = newLength - oldLength;
+        this.setSelectionRange(cursorPos + diff, cursorPos + diff);
+    });
+    
+    // On focus, remove formatting for easier editing
+    budgetAmountInput.addEventListener('focus', function() {
+        if (this.value) {
+            this.value = parseCurrency(this.value);
+        }
+    });
+    
+    // On blur, reformat
+    budgetAmountInput.addEventListener('blur', function() {
+        if (this.value) {
+            this.value = formatCurrency(this.value);
+        }
+    });
+    
+    // When form submits, send the raw numeric value
+    document.getElementById('categoryBudgetForm').addEventListener('submit', function() {
+        budgetAmountInput.value = parseCurrency(budgetAmountInput.value);
+    });
+    
+    // Format existing value on load
+    if (budgetAmountInput.value && !isNaN(budgetAmountInput.value)) {
+        budgetAmountInput.value = formatCurrency(budgetAmountInput.value);
+    }
+
+});
+</script>
+{% endblock %}

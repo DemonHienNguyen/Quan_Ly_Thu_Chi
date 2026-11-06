@@ -1,0 +1,607 @@
+{% load static currency_filters %}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}Quản lý chi tiêu sinh viên PTIT{% endblock %}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{% static 'images/ptit-logo.png' %}?v=20261104-1">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261104-7">
+    <script>
+        try {
+            if (sessionStorage.getItem('ptitPageTransitionStarted')) {
+                document.documentElement.classList.add('page-transition-pending');
+            }
+        } catch (error) {
+            // Page transitions remain a progressive enhancement when storage is unavailable.
+        }
+    </script>
+</head>
+<body data-user-id="{{ request.user.id|default:'' }}" class="{% if sidebar_collapsed %}sidebar-collapsed{% endif %}">
+<div class="page-transition" id="pageTransition" aria-hidden="true">
+    <div class="page-transition-content" role="status" aria-label="Đang chuyển trang">
+        <div class="page-transition-purse" aria-hidden="true">
+            <div class="page-transition-coin">
+                <div class="page-transition-face page-transition-front">P</div>
+                <div class="page-transition-face page-transition-back">P</div>
+                <div class="page-transition-edge"></div>
+            </div>
+        </div>
+        <span>Đang tải...</span>
+    </div>
+</div>
+
+<!-- Conditional Layout Opening Tags -->
+{% if user.is_authenticated %}
+    {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'dashboard_alt' or request.resolver_match.url_name == 'transactions' or request.resolver_match.url_name == 'budget' or request.resolver_match.url_name == 'categories' or request.resolver_match.url_name == 'admin_users' or request.resolver_match.url_name == 'admin_categories' or request.resolver_match.url_name == 'admin_logs' %}
+    <!-- Layout with Sidebar -->
+    <div class="ptit-shell">
+        <!-- Sidebar Toggle Button (Mobile) -->
+        <button class="sidebar-toggle-mobile" id="sidebarToggleMobile" aria-label="Toggle sidebar" aria-expanded="false">
+            <i class="fa-solid fa-bars"></i>
+        </button>
+        
+        <!-- Sidebar Overlay (Mobile) -->
+        <div class="sidebar-overlay" id="sidebarOverlay" aria-hidden="true"></div>
+
+        <aside class="ptit-sidebar" id="ptitSidebar" role="navigation" aria-label="Menu chính">
+            <!-- Sidebar Header -->
+            <div class="sidebar-header">
+                <a class="ptit-sidebar-brand" href="{% url 'dashboard' %}" aria-label="Trang chủ">
+                    <img class="ptit-brand-logo" src="{% static 'images/ptit-logo.png' %}" alt="PTIT">
+                    <span class="ptit-brand-sub">Quản lý tài chính</span>
+                </a>
+                <!-- Sidebar Toggle Button (Desktop) -->
+                <button class="sidebar-toggle-desktop" id="sidebarToggleDesktop" aria-label="Thu gọn sidebar" aria-expanded="true" title="Thu gọn menu">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+            </div>
+
+            <!-- Navigation: Student Section -->
+            <div class="ptit-section-label" data-section="student">
+                <span>Không gian sinh viên</span>
+            </div>
+            <nav class="ptit-nav-inner" aria-label="Điều hướng chính">
+                <a class="nav-link {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'dashboard_alt' %}active{% endif %}" 
+                   href="{% url 'dashboard' %}" 
+                   data-page="dashboard"
+                   aria-current="{% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'dashboard_alt' %}page{% endif %}">
+                    <i class="fa-solid fa-house"></i><span>Trang chủ</span>
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'transactions' %}active{% endif %}" 
+                   href="{% url 'transactions' %}" 
+                   data-page="transactions"
+                   aria-current="{% if request.resolver_match.url_name == 'transactions' %}page{% endif %}">
+                    <i class="fa-solid fa-wallet"></i><span>Giao dịch</span>
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'budget' %}active{% endif %}" 
+                   href="{% url 'budget' %}" 
+                   data-page="budget"
+                   aria-current="{% if request.resolver_match.url_name == 'budget' %}page{% endif %}">
+                    <i class="fa-solid fa-graduation-cap"></i><span>Ngân sách</span>
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'categories' %}active{% endif %}" 
+                   href="{% url 'categories' %}" 
+                   data-page="categories"
+                   aria-current="{% if request.resolver_match.url_name == 'categories' %}page{% endif %}">
+                    <i class="fa-regular fa-folder"></i><span>Danh mục</span>
+                </a>
+            </nav>
+
+            <!-- Navigation: Admin Section -->
+            {% if request.user.is_superuser or request.user.role == 'ADMIN' or request.user.role == 'admin' %}
+            <div class="ptit-section-label" data-section="admin">
+                <span>Quản trị</span>
+            </div>
+            <nav class="ptit-nav-inner" aria-label="Quản trị">
+                <a class="nav-link {% if request.resolver_match.url_name == 'admin_users' %}active{% endif %}" 
+                   href="{% url 'admin_users' %}" 
+                   data-page="admin_users"
+                   aria-current="{% if request.resolver_match.url_name == 'admin_users' %}page{% endif %}">
+                    <i class="fa-solid fa-users"></i><span>Người dùng</span>
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'admin_categories' %}active{% endif %}" 
+                   href="{% url 'admin_categories' %}" 
+                   data-page="admin_categories"
+                   aria-current="{% if request.resolver_match.url_name == 'admin_categories' %}page{% endif %}">
+                    <i class="fa-solid fa-tags"></i><span>Danh mục hệ thống</span>
+                </a>
+                <a class="nav-link {% if request.resolver_match.url_name == 'admin_logs' %}active{% endif %}" 
+                   href="{% url 'admin_logs' %}" 
+                   data-page="admin_logs"
+                   aria-current="{% if request.resolver_match.url_name == 'admin_logs' %}page{% endif %}">
+                    <i class="fa-solid fa-clock-rotate-left"></i><span>Nhật ký hệ thống</span>
+                </a>
+            </nav>
+            {% endif %}
+
+            <!-- Sidebar Bottom -->
+            <div class="ptit-sidebar-bottom">
+                <a href="{% url 'logout' %}" class="nav-link logout-link" data-page="logout">
+                    <i class="fa-solid fa-right-from-bracket"></i><span>Đăng xuất</span>
+                </a>
+            </div>
+            
+            <!-- Footer -->
+            <div class="ptit-footer">
+                <p>Học viện Công nghệ<br>Bưu chính Viễn thông</p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <div class="ptit-main">
+            <header class="ptit-topbar dashboard-topbar">
+                <button class="sidebar-toggle-topbar" id="sidebarToggleTopbar" aria-label="Toggle sidebar" aria-expanded="true">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <span class="topbar-page-name">{{ current_page_title|default:"Trang chủ" }}</span>
+                <div class="ptit-top-right">
+                    
+                    <!-- User Dropdown -->
+                    <div class="dropdown">
+                        <button class="profile-menu-toggle"
+                                type="button" data-bs-toggle="dropdown" aria-expanded="false"
+                                id="userDropdown">
+                            <span class="profile-menu-avatar" aria-hidden="true">{{ request.user.full_name|default:request.user.username|first|upper }}</span>
+                            <span class="profile-menu-copy">
+                                <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                                <small>{{ request.user.get_role_display|default:"Tài khoản" }}</small>
+                            </span>
+                            <i class="fa-solid fa-chevron-down profile-menu-chevron" aria-hidden="true"></i>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end profile-menu-dropdown" aria-labelledby="userDropdown">
+                            <li class="profile-menu-heading">
+                                <span class="profile-menu-avatar" aria-hidden="true">{{ request.user.full_name|default:request.user.username|first|upper }}</span>
+                                <span>
+                                    <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                                    <small>{{ request.user.email }}</small>
+                                </span>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="fa-regular fa-user"></i><span>Thông tin tài khoản</span></a></li>
+                            <li><a class="dropdown-item profile-menu-logout" href="{% url 'logout' %}"><i class="fa-solid fa-right-from-bracket"></i><span>Đăng xuất</span></a></li>
+                        </ul>
+                    </div>
+                </div>
+            </header>
+            <main class="ptit-main-content">
+    {% else %}
+    <!-- Layout without Sidebar (simple-topbar) -->
+    <header class="simple-topbar">
+        <div class="simple-brand">
+            <a class="ptit-logo" href="{% url 'dashboard' %}" aria-label="PTIT - Trang chủ">
+                <img class="ptit-logo-image" src="{% static 'images/ptit-logo.png' %}" alt="PTIT">
+            </a>
+            <span class="ptit-div"></span>
+            <div><strong>Quản lý chi tiêu sinh viên</strong><small>Học viện Công nghệ Bưu chính Viễn thông</small></div>
+        </div>
+        <div class="simple-user dropdown">
+            <button class="profile-menu-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" id="simpleUserDropdown">
+                <span class="profile-menu-avatar" aria-hidden="true">{{ request.user.full_name|default:request.user.username|first|upper }}</span>
+                <span class="profile-menu-copy">
+                    <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+                    <small>{{ request.user.get_role_display|default:"Tài khoản" }}</small>
+                </span>
+                <i class="fa-solid fa-chevron-down profile-menu-chevron" aria-hidden="true"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-end profile-menu-dropdown" aria-labelledby="simpleUserDropdown">
+                <li class="profile-menu-heading">
+                    <span class="profile-menu-avatar" aria-hidden="true">{{ request.user.full_name|default:request.user.username|first|upper }}</span>
+                    <span><strong>{{ request.user.get_full_name|default:request.user.username }}</strong><small>{{ request.user.email }}</small></span>
+                </li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="{% url 'profile' %}"><i class="fa-regular fa-user"></i><span>Thông tin tài khoản</span></a></li>
+                <li><a class="dropdown-item profile-menu-logout" href="{% url 'logout' %}"><i class="fa-solid fa-right-from-bracket"></i><span>Đăng xuất</span></a></li>
+            </ul>
+        </div>
+    </header>
+    <main class="simple-main">
+    {% endif %}
+
+{% else %}
+    <!-- Guest pages (login/register) -->
+    <header class="guest-topbar">
+        <a class="guest-brand" href="{% url 'login' %}">
+            <img class="guest-brand-logo" src="{% static 'images/ptit-logo.png' %}" alt="PTIT">
+            <strong>Quản lý chi tiêu sinh viên</strong>
+        </a>
+    </header>
+    <main class="auth-main">
+{% endif %}
+
+<!-- Messages (common for all layouts) -->
+{% if messages %}
+<div class="{% if user.is_authenticated %}ptit-messages{% else %}auth-messages{% endif %}">
+    {% for message in messages %}
+    {% with level=message.tags|default:'info' %}
+        {% if 'login-success' in message.tags %}
+            <div class="login-success-toast" role="status" aria-live="polite">
+                <span class="login-success-toast-icon" aria-hidden="true"><i class="fa-solid fa-check"></i></span>
+                <span class="login-success-toast-text">{{ message }}</span>
+                <button class="login-success-toast-close" type="button" aria-label="Đóng thông báo"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+        {% elif level == 'error' %}
+            {% with alert_class='danger' %}
+            <div class="alert alert-{{ alert_class }} alert-dismissible fade show" role="alert">
+                {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+            </div>
+            {% endwith %}
+        {% else %}
+            <div class="alert alert-{{ level }} alert-dismissible fade show" role="alert">
+                {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+            </div>
+        {% endif %}
+    {% endwith %}
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- Single Content Block -->
+{% block content %}{% endblock %}
+
+<!-- Conditional Layout Closing Tags -->
+{% if user.is_authenticated %}
+    {% if request.resolver_match.url_name == 'dashboard' or request.resolver_match.url_name == 'dashboard_alt' or request.resolver_match.url_name == 'transactions' or request.resolver_match.url_name == 'budget' or request.resolver_match.url_name == 'categories' or request.resolver_match.url_name == 'admin_users' or request.resolver_match.url_name == 'admin_categories' or request.resolver_match.url_name == 'admin_logs' %}
+            </main>
+        </div>
+    </div>
+    {% else %}
+    </main>
+    {% endif %}
+{% else %}
+    </main>
+{% endif %}
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<!-- Sidebar JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    // Elements
+    const sidebar = document.getElementById('ptitSidebar');
+    const toggleDesktop = document.getElementById('sidebarToggleDesktop');
+    const toggleMobile = document.getElementById('sidebarToggleMobile');
+    const toggleTopbar = document.getElementById('sidebarToggleTopbar');
+    const overlay = document.getElementById('sidebarOverlay');
+    const body = document.body;
+    
+    // Current page detection
+    const currentUrl = window.location.pathname;
+    const navLinks = document.querySelectorAll('.ptit-nav-inner .nav-link[data-page]');
+    
+    // Helper: Get cookie
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+        return null;
+    }
+    
+    // Helper: Set cookie
+    function setCookie(name, value, days = 365) {
+        const expires = new Date(Date.now() + days * 864e5).toUTCString();
+        document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
+    }
+    
+    // Initialize sidebar state from cookie/localStorage
+    function initSidebarState() {
+        const savedState = localStorage.getItem('sidebarCollapsed') || getCookie('sidebarCollapsed');
+        const isCollapsed = savedState === 'true';
+        
+        if (isCollapsed && window.innerWidth >= 992) {
+            collapseSidebar();
+        } else if (window.innerWidth < 992) {
+            // On mobile, always start collapsed (hidden)
+            body.classList.add('sidebar-collapsed');
+            if (toggleDesktop) toggleDesktop.setAttribute('aria-expanded', 'false');
+        }
+    }
+    
+    // Collapse sidebar
+    function collapseSidebar() {
+        body.classList.add('sidebar-collapsed');
+        if (toggleDesktop) {
+            toggleDesktop.setAttribute('aria-expanded', 'false');
+            toggleDesktop.querySelector('i').className = 'fa-solid fa-chevron-right';
+            toggleDesktop.title = 'Mở rộng menu';
+        }
+        if (toggleTopbar) {
+            toggleTopbar.setAttribute('aria-expanded', 'false');
+        }
+        localStorage.setItem('sidebarCollapsed', 'true');
+        setCookie('sidebarCollapsed', 'true');
+    }
+    
+    // Expand sidebar
+    function expandSidebar() {
+        body.classList.remove('sidebar-collapsed');
+        if (toggleDesktop) {
+            toggleDesktop.setAttribute('aria-expanded', 'true');
+            toggleDesktop.querySelector('i').className = 'fa-solid fa-chevron-left';
+            toggleDesktop.title = 'Thu gọn menu';
+        }
+        if (toggleTopbar) {
+            toggleTopbar.setAttribute('aria-expanded', 'true');
+        }
+        localStorage.setItem('sidebarCollapsed', 'false');
+        setCookie('sidebarCollapsed', 'false');
+    }
+    
+    // Toggle sidebar
+    function toggleSidebar() {
+        if (body.classList.contains('sidebar-collapsed')) {
+            expandSidebar();
+        } else {
+            collapseSidebar();
+        }
+    }
+    
+    // Mobile sidebar toggle
+    function toggleMobileSidebar() {
+        const isOpen = body.classList.toggle('sidebar-mobile-open');
+        if (toggleMobile) {
+            toggleMobile.setAttribute('aria-expanded', isOpen);
+            toggleMobile.querySelector('i').className = isOpen ? 'fa-solid fa-xmark' : 'fa-solid fa-bars';
+        }
+        if (overlay) {
+            overlay.setAttribute('aria-hidden', !isOpen);
+        }
+    }
+    
+    // Close mobile sidebar
+    function closeMobileSidebar() {
+        body.classList.remove('sidebar-mobile-open');
+        if (toggleMobile) {
+            toggleMobile.setAttribute('aria-expanded', 'false');
+            toggleMobile.querySelector('i').className = 'fa-solid fa-bars';
+        }
+        if (overlay) {
+            overlay.setAttribute('aria-hidden', 'true');
+        }
+    }
+    
+    // Event listeners
+    if (toggleDesktop) {
+        toggleDesktop.addEventListener('click', toggleSidebar);
+    }
+    if (toggleMobile) {
+        toggleMobile.addEventListener('click', toggleMobileSidebar);
+    }
+    if (toggleTopbar) {
+        toggleTopbar.addEventListener('click', function() {
+            if (window.innerWidth < 992) {
+                toggleMobileSidebar();
+            } else {
+                toggleSidebar();
+            }
+        });
+    }
+    if (overlay) {
+        overlay.addEventListener('click', closeMobileSidebar);
+    }
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeMobileSidebar();
+        }
+    });
+    
+    // Handle window resize
+    let resizeTimer;
+    window.addEventListener('resize', function() {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(function() {
+            if (window.innerWidth >= 992) {
+                closeMobileSidebar();
+                // Restore desktop state
+                const savedState = localStorage.getItem('sidebarCollapsed') || getCookie('sidebarCollapsed');
+                if (savedState === 'true') {
+                    collapseSidebar();
+                } else {
+                    expandSidebar();
+                }
+            } else {
+                // Mobile: always collapsed unless explicitly opened
+                body.classList.add('sidebar-collapsed');
+            }
+        }, 100);
+    });
+    
+    // Active link highlighting based on current URL
+    function updateActiveLink() {
+        navLinks.forEach(function(link) {
+            const href = link.getAttribute('href');
+            const page = link.getAttribute('data-page');
+            let isActive = false;
+            
+            // Check exact match or prefix match for nested routes
+            if (href === currentUrl) {
+                isActive = true;
+            } else if (page === 'dashboard' && (currentUrl === '/' || currentUrl === '/dashboard/')) {
+                isActive = true;
+            } else if (page !== 'dashboard' && currentUrl.startsWith(href)) {
+                isActive = true;
+            }
+            
+            link.classList.toggle('active', isActive);
+            link.setAttribute('aria-current', isActive ? 'page' : 'false');
+        });
+    }
+    
+    // Initialize
+    initSidebarState();
+    updateActiveLink();
+    
+    // Click on nav links - update active state immediately
+    navLinks.forEach(function(link) {
+        link.addEventListener('click', function() {
+            // Small delay to let navigation happen, then update
+            setTimeout(updateActiveLink, 50);
+            
+            // On mobile, close sidebar after clicking a link
+            if (window.innerWidth < 992) {
+                closeMobileSidebar();
+            }
+        });
+    });
+    
+    // Tooltip initialization for sidebar items when collapsed
+    function initTooltips() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('.ptit-sidebar .nav-link, .ptit-sidebar-bottom a'));
+        tooltipTriggerList.forEach(function (tooltipTriggerEl) {
+            // Remove existing tooltip
+            const existingTooltip = bootstrap.Tooltip.getInstance(tooltipTriggerEl);
+            if (existingTooltip) {
+                existingTooltip.dispose();
+            }
+            // Only show tooltip when sidebar is collapsed
+            if (body.classList.contains('sidebar-collapsed') && window.innerWidth >= 992) {
+                new bootstrap.Tooltip(tooltipTriggerEl, {
+                    placement: 'right',
+                    trigger: 'hover focus',
+                    container: 'body',
+                    delay: { show: 200, hide: 100 }
+                });
+            }
+        });
+    }
+    
+    // Re-initialize tooltips on sidebar toggle
+    const observer = new MutationObserver(function() {
+        initTooltips();
+    });
+    observer.observe(body, { attributes: true, attributeFilter: ['class'] });
+    
+    // Initial tooltip init
+    initTooltips();
+    
+    // Expose functions globally for debugging
+    window.PTITSidebar = {
+        collapse: collapseSidebar,
+        expand: expandSidebar,
+        toggle: toggleSidebar,
+        isCollapsed: () => body.classList.contains('sidebar-collapsed')
+    };
+});
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var overlay = document.getElementById('pageTransition');
+    if (!overlay) return;
+    var transitionStorageKey = 'ptitPageTransitionStarted';
+    var transitionDuration = 1500;
+    var hideTimer;
+
+    function showPageTransition() {
+        overlay.classList.add('is-visible');
+        overlay.setAttribute('aria-hidden', 'false');
+    }
+
+    function startPageTransition() {
+        try {
+            sessionStorage.setItem(transitionStorageKey, String(Date.now()));
+        } catch (error) {
+            // Continue with the in-page transition if session storage is unavailable.
+        }
+        document.documentElement.classList.remove('page-transition-pending');
+        showPageTransition();
+    }
+
+    function resumePageTransition() {
+        var startedAt;
+        try {
+            startedAt = Number(sessionStorage.getItem(transitionStorageKey));
+        } catch (error) {
+            startedAt = 0;
+        }
+
+        if (!startedAt || !Number.isFinite(startedAt)) {
+            document.documentElement.classList.remove('page-transition-pending');
+            overlay.classList.remove('is-visible');
+            overlay.setAttribute('aria-hidden', 'true');
+            return;
+        }
+
+        showPageTransition();
+        window.clearTimeout(hideTimer);
+        var remaining = Math.max(0, transitionDuration - (Date.now() - startedAt));
+        hideTimer = window.setTimeout(function () {
+            overlay.classList.remove('is-visible');
+            overlay.setAttribute('aria-hidden', 'true');
+            document.documentElement.classList.remove('page-transition-pending');
+            try {
+                sessionStorage.removeItem(transitionStorageKey);
+            } catch (error) {
+                // The transition still closes even if storage becomes unavailable.
+            }
+        }, remaining);
+    }
+
+    document.addEventListener('click', function (event) {
+        var link = event.target.closest('a[href]');
+        if (!link || event.defaultPrevented || event.button !== 0 ||
+            event.metaKey || event.ctrlKey || event.shiftKey || event.altKey ||
+            link.target && link.target !== '_self' ||
+            link.hasAttribute('download') ||
+            link.hasAttribute('data-no-page-transition') ||
+            link.getAttribute('href').trim().charAt(0) === '#') {
+            return;
+        }
+
+        var destination = new URL(link.href, window.location.href);
+        if (destination.origin !== window.location.origin ||
+            destination.href === window.location.href ||
+            (destination.pathname === window.location.pathname &&
+             destination.search === window.location.search)) {
+            return;
+        }
+
+        startPageTransition();
+    });
+
+    document.addEventListener('submit', function (event) {
+        var form = event.target;
+        if (!(form instanceof HTMLFormElement) ||
+            form.target && form.target !== '_self' ||
+            form.method.toLowerCase() === 'dialog' ||
+            form.hasAttribute('data-no-page-transition')) {
+            return;
+        }
+
+        if (!event.defaultPrevented) startPageTransition();
+    });
+
+    resumePageTransition();
+    window.addEventListener('pageshow', resumePageTransition);
+
+    document.querySelectorAll('.login-success-toast').forEach(function (toast) {
+        var dismissTimer = window.setTimeout(function () {
+            toast.classList.add('is-collapsing');
+            window.setTimeout(function () {
+                toast.remove();
+            }, 320);
+        }, 2000);
+
+        var closeButton = toast.querySelector('.login-success-toast-close');
+        if (closeButton) {
+            closeButton.addEventListener('click', function () {
+                window.clearTimeout(dismissTimer);
+                toast.classList.add('is-collapsing');
+                window.setTimeout(function () {
+                    toast.remove();
+                }, 320);
+            });
+        }
+    });
+});
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

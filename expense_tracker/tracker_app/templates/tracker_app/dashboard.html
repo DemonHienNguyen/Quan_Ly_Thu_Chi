@@ -1,0 +1,402 @@
+{% extends 'tracker_app/base.html' %}
+{% load humanize static currency_filters %}
+
+{% block title %}Tổng quan tài chính | PTIT{% endblock %}
+
+{% block content %}
+<section class="dashboard-heading">
+    <div>
+        <p class="eyebrow"><span></span>Tài chính sinh viên</p>
+        <h1 class="page-title">Dashboard tổng quan tài chính tháng {{ selected_month|slice:"5:7" }}/{{ selected_month|slice:":4" }}</h1>
+        <p class="page-sub">Theo dõi thu nhập, chi tiêu và số dư của bạn trong tháng.</p>
+    </div>
+    <form method="get" action="{% url 'dashboard' %}" class="month-picker">
+        <label for="dashboardMonth"><i class="fa-regular fa-calendar"></i><span class="visually-hidden">Chọn tháng</span></label>
+        <input id="dashboardMonth" type="month" name="month" value="{{ selected_month }}">
+    </form>
+</section>
+
+
+
+<!-- Stat Cards Row -->
+<section class="dashboard-stats" aria-label="Tổng quan tháng">
+    <article class="dashboard-stat stat-income">
+        <div class="dashboard-stat-head">
+            <span>Tổng thu nhập</span>
+            <span class="stat-symbol income"><i class="fa-solid fa-arrow-up"></i></span>
+        </div>
+        <div class="dashboard-stat-value">{{ total_income|default:0|currency }}</div>
+        <div class="stat-trend">
+            {% if prev_month_income is not None %}
+                <span class="trend {% if income_trend >= 0 %}up{% else %}down{% endif %}">
+                    <i class="fa-solid fa-{% if income_trend >= 0 %}arrow-up{% else %}arrow-down{% endif %}"></i>
+                    <span>{{ income_trend|floatformat:1|default:0 }}%</span> so với tháng trước
+                </span>
+            {% else %}
+                <span class="muted">Thu nhập tháng {{ selected_month|slice:"5:7" }}</span>
+            {% endif %}
+        </div>
+    </article>
+    <article class="dashboard-stat stat-expense">
+        <div class="dashboard-stat-head">
+            <span>Tổng chi tiêu</span>
+            <span class="stat-symbol expense"><i class="fa-solid fa-arrow-down"></i></span>
+        </div>
+        <div class="dashboard-stat-value">{{ total_expense|default:0|currency }}</div>
+        <div class="stat-trend">
+            {% if prev_month_expense is not None %}
+                <span class="trend {% if expense_trend >= 0 %}up{% else %}down{% endif %}">
+                    <i class="fa-solid fa-{% if expense_trend >= 0 %}arrow-up{% else %}arrow-down{% endif %}"></i>
+                    <span>{{ expense_trend|floatformat:1|default:0 }}%</span> so với tháng trước
+                </span>
+            {% else %}
+                <span class="muted">Chi tiêu tháng {{ selected_month|slice:"5:7" }}</span>
+            {% endif %}
+        </div>
+    </article>
+    <article class="dashboard-stat balance-stat">
+        <div class="dashboard-stat-head">
+            <span>Số dư thặng dư</span>
+            <span class="stat-symbol balance"><i class="fa-solid fa-wallet"></i></span>
+        </div>
+        <div class="dashboard-stat-value">{{ balance|default:0|currency }}</div>
+        <div class="stat-trend">
+            {% if savings_rate is not None %}
+                <span class="savings-rate">
+                    <i class="fa-solid fa-piggy-bank"></i>
+                    <strong>{{ savings_rate }}%</strong> tỷ lệ tiết kiệm
+                </span>
+            {% else %}
+                <span class="muted">Thu nhập còn lại sau chi tiêu</span>
+            {% endif %}
+        </div>
+    </article>
+</section>
+
+<!-- Charts Row -->
+<section class="dashboard-charts">
+    <!-- Doughnut Chart: Category Breakdown -->
+    <article class="chart-card dashboard-chart-card" id="pieChartCard">
+        <div class="chart-heading">
+            <div>
+                <h2>Phân bổ chi tiêu theo danh mục</h2>
+                <p>Cơ cấu chi tiêu trong tháng {{ selected_month|slice:"5:7" }}/{{ selected_month|slice:":4" }}</p>
+            </div>
+            <div class="chart-key">
+                <span><i class="income-dot"></i>Chi tiêu</span>
+            </div>
+        </div>
+        <div class="chart-content">
+            <div class="chart-canvas-wrap">
+                <canvas id="categoryPieChart" aria-label="Phân bổ chi tiêu theo danh mục"></canvas>
+                <div class="chart-empty-state" id="pieEmptyState" style="display:none;">
+                    <i class="fa-regular fa-chart-pie"></i>
+                    <p>Chưa có chi tiêu trong tháng này</p>
+                    <a href="{% url 'transactions' %}#transaction-form" class="btn btn-ptit btn-sm mt-2">Thêm giao dịch</a>
+                </div>
+            </div>
+            <div class="chart-legend" id="pieLegend"></div>
+        </div>
+        <div class="chart-footer">
+            <span>Tổng chi tiêu</span>
+            <strong>{{ total_expense|default:0|currency }}</strong>
+        </div>
+    </article>
+
+    <!-- Bar Chart: Monthly Comparison -->
+    <article class="chart-card dashboard-chart-card" id="barChartCard">
+        <div class="chart-heading">
+            <div>
+                <h2>So sánh Thu / Chi 6 tháng gần nhất</h2>
+                <p>Đơn vị: VND</p>
+            </div>
+            <div class="chart-key">
+                <span><i class="income-dot"></i>Thu</span>
+                <span><i class="expense-dot"></i>Chi</span>
+            </div>
+        </div>
+        <div class="bar-chart-wrap">
+            <canvas id="monthlyBarChart" aria-label="So sánh thu nhập và chi tiêu theo tháng"></canvas>
+            <div class="chart-empty-state" id="barEmptyState" style="display:none;">
+                <i class="fa-regular fa-chart-bar"></i>
+                <p>Chưa đủ dữ liệu để hiển thị</p>
+            </div>
+        </div>
+        <div class="chart-footer">
+            <span>Thống kê 6 tháng gần nhất</span>
+            <a href="{% url 'transactions' %}">Xem giao dịch</a>
+        </div>
+    </article>
+</section>
+
+<!-- Insights Row: Top Categories + Budget Progress -->
+<section class="dashboard-insights">
+    <!-- Top Spending Categories -->
+    <article class="chart-card insight-card" id="topCategoriesCard">
+        <div class="chart-heading">
+            <div>
+                <h2>Danh mục chi tiêu tháng này</h2>
+                <p>Các khoản chi tiêu trong tháng {{ selected_month|slice:"5:7" }}/{{ selected_month|slice:":4" }}</p>
+            </div>
+        </div>
+        <div class="insight-content" id="topCategoriesContent">
+            {% if top_categories %}
+                <ul class="category-ranking">
+                    {% for cat in top_categories %}
+                    <li class="category-rank-item">
+                        <span class="rank-badge">{{ forloop.counter }}</span>
+                        <div class="cat-info">
+                            <span class="cat-icon">{% if cat.icon_is_emoji %}{{ cat.icon_text }}{% else %}<i class="{{ cat.icon_css_class }}"></i>{% endif %}</span>
+                            <span class="cat-name">{{ cat.category_name }}</span>
+                        </div>
+                        <div class="cat-amount">
+                            <span class="amount">{{ cat.total|currency }}</span>
+                            <span class="percentage">{{ cat.percentage }}%</span>
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <div class="insight-empty">
+                    <i class="fa-regular fa-list"></i>
+                    <p>Chưa có dữ liệu chi tiêu</p>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+
+    <!-- Budget Progress -->
+    <article class="chart-card insight-card" id="budgetProgressCard">
+        <div class="chart-heading">
+            <div>
+                <h2>Tiến độ ngân sách tháng</h2>
+                <p>Hạn mức chi tiêu tổng thể</p>
+            </div>
+        </div>
+        <div class="insight-content">
+            {% if overall_budget %}
+                <div class="budget-progress-wrapper">
+                    <div class="budget-summary">
+                        <div class="budget-item">
+                            <span class="label">Đã chi</span>
+                            <span class="value expense">{{ overall_spent|currency }}</span>
+                        </div>
+                        <div class="budget-item">
+                            <span class="label">Hạn mức</span>
+                            <span class="value">{{ overall_budget|currency }}</span>
+                        </div>
+                        <div class="budget-item">
+                            <span class="label">Còn lại</span>
+                            <span class="value {% if overall_remaining < 0 %}negative{% else %}positive{% endif %}">
+                                {{ overall_remaining|currency }}
+                            </span>
+                        </div>
+                    </div>
+                    <div class="progress-bar-container" role="progressbar" aria-valuenow="{{ overall_percent }}" aria-valuemin="0" aria-valuemax="100">
+                        <div class="progress-bar-track">
+                            <div class="progress-bar-fill {% if overall_percent >= 100 %}over{% elif overall_percent >= 80 %}near{% endif %}"
+                                 style="width: {{ overall_percent_display }}%"></div>
+                        </div>
+                        <div class="progress-labels">
+                            <span>0%</span>
+                            <span class="current">{{ overall_percent }}%</span>
+                            <span>100%</span>
+                        </div>
+                    </div>
+                    <a href="{% url 'budget' %}" class="btn btn-outline-ptit btn-sm mt-2">Chi tiết ngân sách</a>
+                </div>
+            {% else %}
+                <div class="insight-empty">
+                    <i class="fa-solid fa-wallet"></i>
+                    <p>Chưa đặt ngân sách tháng này</p>
+                    <a href="{% url 'budget' %}" class="btn btn-ptit btn-sm mt-2">Thiết lập ngay</a>
+                </div>
+            {% endif %}
+        </div>
+    </article>
+</section>
+
+<!-- Recent Transactions -->
+<section class="dashboard-recent">
+    <div class="section-header">
+        <h2>Giao dịch gần đây</h2>
+        <a href="{% url 'transactions' %}" class="view-all">Xem tất cả <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+    <div class="content-card transaction-list-card">
+        <div class="table-responsive">
+            <table class="table transaction-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Ngày</th>
+                        <th>Danh mục</th>
+                        <th>Diễn giải</th>
+                        <th>Loại</th>
+                        <th class="text-end">Số tiền</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in recent_transactions %}
+                    <tr>
+                        <td>{{ transaction.transaction_date|date:"d/m/Y" }}</td>
+                        <td class="fw-semibold">
+                            <span class="cat-icon-sm">{% if transaction.category.icon_is_emoji %}{{ transaction.category.icon }}{% else %}<i class="{{ transaction.category.icon_css_class }}"></i>{% endif %}</span>
+                            {{ transaction.category.category_name }}
+                        </td>
+                        <td>{{ transaction.note|default:"—"|truncatechars:30 }}</td>
+                        <td>
+                            {% if transaction.type == 'INCOME' %}
+                                <span class="transaction-type type-income">Thu</span>
+                            {% else %}
+                                <span class="transaction-type type-expense">Chi</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end amount-cell {% if transaction.type == 'INCOME' %}income-amount{% else %}expense-amount{% endif %}">
+                            {% if transaction.type == 'INCOME' %}+{% else %}-{% endif %}{{ transaction.amount|currency }}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="empty-row">
+                            <i class="fa-regular fa-receipt"></i>
+                            <p>Chưa có giao dịch gần đây</p>
+                            <a href="{% url 'transactions' %}#transaction-form" class="btn btn-ptit btn-sm mt-2">Thêm giao dịch đầu tiên</a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<!-- Financial Health / Sức khỏe tài chính -->
+<section class="dashboard-financial-health">
+    <article class="chart-card insight-card" id="savingsCard">
+        <div class="chart-heading">
+            <div>
+                <h2>Sức khỏe tài chính</h2>
+                <p>Đánh giá nhanh tình hình tài chính</p>
+            </div>
+        </div>
+        <div class="insight-content">
+            <div class="health-indicators">
+                <div class="health-item {% if balance >= 0 %}good{% else %}bad{% endif %}">
+                    <div class="health-icon">
+                        <i class="fa-solid {% if balance >= 0 %}fa-circle-check{% else %}fa-circle-exclamation{% endif %}"></i>
+                    </div>
+                    <div class="health-info">
+                        <span class="health-label">Số dư</span>
+                        <span class="health-value {% if balance >= 0 %}positive{% else %}negative{% endif %}">
+                            {% if balance >= 0 %}+{% endif %}{{ balance|currency }}
+                        </span>
+                    </div>
+                </div>
+                <div class="health-item {% if savings_rate >= 20 %}good{% elif savings_rate >= 10 %}warning{% else %}bad{% endif %}">
+                    <div class="health-icon">
+                        <i class="fa-solid fa-piggy-bank"></i>
+                    </div>
+                    <div class="health-info">
+                        <span class="health-label">Tỷ lệ tiết kiệm</span>
+                        <span class="health-value">{{ savings_rate|default:0 }}%</span>
+                    </div>
+                </div>
+                <div class="health-item {% if budget_status == 'safe' %}good{% elif budget_status == 'warning' %}warning{% else %}bad{% endif %}">
+                    <div class="health-icon">
+                        <i class="fa-solid {% if budget_status == 'safe' %}fa-shield-halved{% elif budget_status == 'warning' %}fa-triangle-exclamation{% else %}fa-shield-slash{% endif %}"></i>
+                    </div>
+                    <div class="health-info">
+                        <span class="health-label">Ngân sách</span>
+                        <span class="health-value">
+                            {% if budget_status == 'safe' %}An toàn
+                            {% elif budget_status == 'warning' %}Cảnh báo
+                            {% else %}Vượt mức{% endif %}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="health-tip">
+                <i class="fa-solid fa-lightbulb"></i>
+                <span>{{ health_tip }}</span>
+            </div>
+        </div>
+    </article>
+</section>
+
+<footer class="dashboard-footer">
+    <span>Dữ liệu tài chính cá nhân • Tháng {{ selected_month|slice:"5:7" }}/{{ selected_month|slice:":4" }}</span>
+    <a href="{% url 'transactions' %}">Quản lý tài chính sinh viên PTIT</a>
+</footer>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/charts-doughnut.js' %}?v=20261104-2"></script>
+<script src="{% static 'js/charts-bar.js' %}?v=20261104-2"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var monthInput = document.getElementById('dashboardMonth');
+    monthInput.addEventListener('change', function () {
+        if (monthInput.value) {
+            monthInput.form.requestSubmit();
+        }
+    });
+});
+document.addEventListener('DOMContentLoaded', function () {
+    // Initialize tooltips
+    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    var pie = {{ pie_data|default:"{}"|safe }};
+    var bar = {{ bar_data|default:"{}"|safe }};
+
+    // Render Pie Chart
+    if (window.PTITCharts && document.getElementById('categoryPieChart')) {
+        var hasPieData = pie.labels && pie.labels.length > 0 && pie.data && pie.data.some(v => v > 0);
+        var pieCanvas = document.getElementById('categoryPieChart');
+        var pieEmpty = document.getElementById('pieEmptyState');
+
+        if (hasPieData) {
+            pieCanvas.style.display = 'block';
+            pieEmpty.style.display = 'none';
+            window.PTITCharts.renderPie('categoryPieChart', pie);
+
+            var palette = window.PTITCharts.piePalette || [
+                '#BE1E2D', '#2563EB', '#0F9D78', '#D97706', '#7C3AED',
+                '#0891B2', '#DB2777', '#4D7C0F', '#475569'
+            ];
+            pie.labels.forEach(function (label, index) {
+                var item = document.createElement('div');
+                item.className = 'chart-legend-item';
+                var color = palette[index % palette.length];
+                item.innerHTML =
+                    '<span class="legend-dot" style="background:' + color + '"></span>' +
+                    '<span class="legend-label">' + label + '</span>';
+                document.getElementById('pieLegend').appendChild(item);
+            });
+        } else {
+            pieCanvas.style.display = 'none';
+            pieEmpty.style.display = 'flex';
+        }
+    }
+
+    // Render Bar Chart
+    if (window.PTITCharts && document.getElementById('monthlyBarChart')) {
+        var hasBarData = bar.labels && bar.labels.length > 0 &&
+                         (bar.income && bar.income.some(v => v > 0) ||
+                          bar.expense && bar.expense.some(v => v > 0));
+        var barCanvas = document.getElementById('monthlyBarChart');
+        var barEmpty = document.getElementById('barEmptyState');
+
+        if (hasBarData) {
+            barCanvas.style.display = 'block';
+            barEmpty.style.display = 'none';
+            window.PTITCharts.renderBar('monthlyBarChart', bar);
+        } else {
+            barCanvas.style.display = 'none';
+            barEmpty.style.display = 'flex';
+        }
+    }
+});
+</script>
+{% endblock %}

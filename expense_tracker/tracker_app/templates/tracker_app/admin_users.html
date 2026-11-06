@@ -1,0 +1,184 @@
+{% extends 'tracker_app/base.html' %}
+
+{% block title %}Quản Lý Người Dùng - Quản Trị Hệ Thống{% endblock %}
+
+{% block content %}
+
+<div class="ptit-page-head">
+    <div>
+        <p class="ptit-breadcrumb mb-0">
+            <a href="{% url 'dashboard' %}"><i class="fa-solid fa-house"></i></a>
+            <i class="fa-solid fa-chevron-right" style="font-size:.65rem;"></i>
+            <span class="active">Quản trị hệ thống</span>
+        </p>
+        <h1 class="page-title">QUẢN LÝ NGƯỜI DÙNG</h1>
+        <p class="page-sub">Danh sách tài khoản sinh viên và quản trị viên trong hệ thống</p>
+    </div>
+</div>
+
+<div class="ptit-card">
+    <div class="ptit-card-h">
+        <span class="sec-label"><i class="fa-solid fa-users-gear"></i> DANH SÁCH TÀI KHOẢN</span>
+        <span class="badge bg-light text-muted">{{ users|length }} tài khoản</span>
+    </div>
+    <div class="ptit-card-b ptit-table-wrapper">
+        <div class="ptit-table">
+            <table class="table align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Họ và tên / Username</th>
+                        <th>Email</th>
+                        <th>Vai trò</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end" style="width:120px;">Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for user in users %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center gap-2">
+                                <span class="ptit-avatar">{{ user.full_name|first|upper }}</span>
+                                <div>
+                                    <div class="fw-semibold text-dark">{{ user.full_name }}</div>
+                                    <div class="text-muted small">{{ user.username }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ user.email }}</td>
+                        <td>
+                            {% if user.role == 'ADMIN' %}
+                                <span class="badge bg-primary-subtle text-primary"><i class="fa-solid fa-user-shield me-1"></i>Quản trị</span>
+                            {% else %}
+                                <span class="badge bg-info-subtle text-info"><i class="fa-solid fa-user-graduate me-1"></i>Sinh viên</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.status == 'ACTIVE' %}
+                                <span class="badge bg-success-subtle text-success"><i class="fa-solid fa-circle-check me-1"></i>Hoạt động</span>
+                            {% else %}
+                                <span class="badge bg-danger-subtle text-danger"><i class="fa-solid fa-lock me-1"></i>Đã khóa</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            {% if user.user_id != request.user.user_id %}
+                                <form method="POST" action="{% url 'toggle_user_status' user.user_id %}" style="display:inline;">
+                                    {% csrf_token %}
+                                    {% if user.status == 'ACTIVE' %}
+                                        <button type="button" class="btn btn-sm btn-outline-danger open-user-status-modal"
+                                                data-user-name="{{ user.full_name }}"
+                                                data-user-email="{{ user.email }}"
+                                                data-next-status="LOCKED"
+                                                title="Khóa tài khoản">
+                                            <i class="fa-solid fa-lock"></i>
+                                        </button>
+                                    {% else %}
+                                        <button type="button" class="btn btn-sm btn-outline-success open-user-status-modal"
+                                                data-user-name="{{ user.full_name }}"
+                                                data-user-email="{{ user.email }}"
+                                                data-next-status="ACTIVE"
+                                                title="Mở khóa tài khoản">
+                                            <i class="fa-solid fa-lock-open"></i>
+                                        </button>
+                                    {% endif %}
+                                </form>
+                            {% else %}
+                                <span class="text-muted small">(Chính bạn)</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="5" class="text-center py-4">
+                            <div class="empty">
+                                <i class="fa-solid fa-users fa-2x mb-2 text-secondary"></i>
+                                <p class="mb-0 fw-semibold text-dark">Chưa có tài khoản nào trong hệ thống.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="ptit-card ptit-mb-lg" style="border-radius:0 0 var(--r-md) var(--r-md);">
+    <div class="ptit-card-b p-3">
+        {% if users %}
+            <div class="d-flex flex-wrap gap-3 align-items-center">
+                <p class="mb-0 fw-semibold text-muted small">
+                    <i class="fa-solid fa-info-circle me-1"></i>
+                    <span class="text-dark">Quản trị viên (Admin) có quyền xem và cấu hình toàn bộ hệ thống.</span>
+                </p>
+                <p class="mb-0 fw-semibold text-muted small">
+                    <i class="fa-solid fa-shield-halved me-1"></i>
+                    <span class="text-dark">Sinh viên chỉ quản lý tài khoản và dữ liệu của chính mình.</span>
+                </p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="modal fade" id="userStatusConfirmModal" tabindex="-1" aria-labelledby="userStatusConfirmTitle" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg category-confirm-modal">
+            <div class="modal-header border-0 pb-0">
+                <span class="delete-confirm-icon" id="userStatusConfirmIcon"><i class="fa-solid fa-lock"></i></span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="modal" aria-label="Đóng"></button>
+            </div>
+            <div class="modal-body pt-2">
+                <h2 class="modal-title" id="userStatusConfirmTitle">Xác nhận thay đổi tài khoản</h2>
+                <p id="userStatusConfirmMessage"></p>
+            </div>
+            <div class="modal-footer border-0 pt-0">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">Hủy</button>
+                <form method="POST" id="userStatusConfirmForm">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger" id="userStatusConfirmSubmit">
+                        <i class="fa-solid fa-lock me-1"></i><span>Khóa tài khoản</span>
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    var modalElement = document.getElementById('userStatusConfirmModal');
+    var confirmModal = new bootstrap.Modal(modalElement);
+    var confirmForm = document.getElementById('userStatusConfirmForm');
+    var message = document.getElementById('userStatusConfirmMessage');
+    var title = document.getElementById('userStatusConfirmTitle');
+    var icon = document.getElementById('userStatusConfirmIcon');
+    var submitButton = document.getElementById('userStatusConfirmSubmit');
+
+    document.querySelectorAll('.open-user-status-modal').forEach(function (button) {
+        button.addEventListener('click', function () {
+            var locking = button.dataset.nextStatus === 'LOCKED';
+            var userName = button.dataset.userName;
+            var userEmail = button.dataset.userEmail;
+            var rowForm = button.closest('form');
+
+            confirmForm.action = rowForm.action;
+            title.textContent = locking ? 'Khóa tài khoản sinh viên?' : 'Mở khóa tài khoản sinh viên?';
+            message.textContent = locking
+                ? 'Bạn có chắc muốn khóa tài khoản ' + userName + ' (' + userEmail + ')?'
+                : 'Bạn có chắc muốn mở khóa tài khoản ' + userName + ' (' + userEmail + ')?';
+            icon.innerHTML = locking
+                ? '<i class="fa-solid fa-lock"></i>'
+                : '<i class="fa-solid fa-lock-open"></i>';
+            submitButton.className = locking ? 'btn btn-danger' : 'btn btn-success';
+            submitButton.innerHTML = locking
+                ? '<i class="fa-solid fa-lock me-1"></i><span>Khóa tài khoản</span>'
+                : '<i class="fa-solid fa-lock-open me-1"></i><span>Mở khóa tài khoản</span>';
+            confirmModal.show();
+        });
+    });
+});
+</script>
+{% endblock %}
