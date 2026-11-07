@@ -42,7 +42,11 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        self.stdout.write("Khởi tạo dữ liệu mẫu theo đặc tả đồ án...")
+        def write_status(message):
+            if options['verbosity'] > 0:
+                self.stdout.write(message)
+
+        write_status("Khởi tạo dữ liệu mẫu theo đặc tả đồ án...")
 
         # 1. Tạo danh mục mặc định của hệ thống
         system_categories = [
@@ -70,18 +74,18 @@ class Command(BaseCommand):
             cat_map[name] = cat
 
         if options['defaults_only']:
-            self.stdout.write(self.style.SUCCESS("Đã khởi tạo danh mục hệ thống."))
+            write_status(self.style.SUCCESS("Đã khởi tạo danh mục hệ thống."))
             return
 
         created_any, demo_users = ensure_demo_accounts()
         admin_user = demo_users['admin_system@ptit.edu.vn']
         student_user = demo_users['sinhvien_test@ptit.edu.vn']
         if created_any:
-            self.stdout.write(self.style.SUCCESS(f"Đã tạo Admin: admin_system@ptit.edu.vn (Pass: Admin@Ptit2026)"))
-            self.stdout.write(self.style.SUCCESS(f"Đã tạo Sinh viên: sinhvien_test@ptit.edu.vn (Pass: Student@2026)"))
-            self.stdout.write(self.style.SUCCESS(f"Đã tạo Sinh viên: sinhvien2_test@ptit.edu.vn (Pass: Student2@2026)"))
+            write_status(self.style.SUCCESS(f"Đã tạo Admin: admin_system@ptit.edu.vn (Pass: Admin@Ptit2026)"))
+            write_status(self.style.SUCCESS(f"Đã tạo Sinh viên: sinhvien_test@ptit.edu.vn (Pass: Student@2026)"))
+            write_status(self.style.SUCCESS(f"Đã tạo Sinh viên: sinhvien2_test@ptit.edu.vn (Pass: Student2@2026)"))
         else:
-            self.stdout.write(self.style.SUCCESS("Tài khoản demo đã tồn tại. Dữ liệu đăng nhập chuẩn đã sẵn sàng."))
+            write_status(self.style.SUCCESS("Tài khoản demo đã tồn tại. Dữ liệu đăng nhập chuẩn đã sẵn sàng."))
 
         # 4. Danh mục cá nhân cho sinh viên thử nghiệm
         custom_cat, _ = Category.objects.get_or_create(
@@ -189,4 +193,4 @@ class Command(BaseCommand):
             details="Khởi tạo cơ sở dữ liệu và bộ danh mục mặc định của hệ thống."
         )
 
-        self.stdout.write(self.style.SUCCESS("Khởi tạo bộ dữ liệu thử nghiệm hoàn tất 100%!"))
+        write_status(self.style.SUCCESS("Khởi tạo bộ dữ liệu thử nghiệm hoàn tất 100%!"))

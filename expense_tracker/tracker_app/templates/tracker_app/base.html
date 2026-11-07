@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="{% static 'images/ptit-logo.png' %}?v=20261104-1">
-    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261104-7">
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=20261107-2">
     <script>
         try {
             if (sessionStorage.getItem('ptitPageTransitionStarted')) {
@@ -134,9 +134,6 @@
         <!-- Main Content -->
         <div class="ptit-main">
             <header class="ptit-topbar dashboard-topbar">
-                <button class="sidebar-toggle-topbar" id="sidebarToggleTopbar" aria-label="Toggle sidebar" aria-expanded="true">
-                    <i class="fa-solid fa-bars"></i>
-                </button>
                 <span class="topbar-page-name">{{ current_page_title|default:"Trang chủ" }}</span>
                 <div class="ptit-top-right">
                     
@@ -265,7 +262,6 @@ document.addEventListener('DOMContentLoaded', function () {
     const sidebar = document.getElementById('ptitSidebar');
     const toggleDesktop = document.getElementById('sidebarToggleDesktop');
     const toggleMobile = document.getElementById('sidebarToggleMobile');
-    const toggleTopbar = document.getElementById('sidebarToggleTopbar');
     const overlay = document.getElementById('sidebarOverlay');
     const body = document.body;
     
@@ -306,11 +302,9 @@ document.addEventListener('DOMContentLoaded', function () {
         body.classList.add('sidebar-collapsed');
         if (toggleDesktop) {
             toggleDesktop.setAttribute('aria-expanded', 'false');
+            toggleDesktop.setAttribute('aria-label', 'Mở rộng sidebar');
             toggleDesktop.querySelector('i').className = 'fa-solid fa-chevron-right';
             toggleDesktop.title = 'Mở rộng menu';
-        }
-        if (toggleTopbar) {
-            toggleTopbar.setAttribute('aria-expanded', 'false');
         }
         localStorage.setItem('sidebarCollapsed', 'true');
         setCookie('sidebarCollapsed', 'true');
@@ -321,11 +315,9 @@ document.addEventListener('DOMContentLoaded', function () {
         body.classList.remove('sidebar-collapsed');
         if (toggleDesktop) {
             toggleDesktop.setAttribute('aria-expanded', 'true');
+            toggleDesktop.setAttribute('aria-label', 'Thu gọn sidebar');
             toggleDesktop.querySelector('i').className = 'fa-solid fa-chevron-left';
             toggleDesktop.title = 'Thu gọn menu';
-        }
-        if (toggleTopbar) {
-            toggleTopbar.setAttribute('aria-expanded', 'true');
         }
         localStorage.setItem('sidebarCollapsed', 'false');
         setCookie('sidebarCollapsed', 'false');
@@ -370,15 +362,6 @@ document.addEventListener('DOMContentLoaded', function () {
     }
     if (toggleMobile) {
         toggleMobile.addEventListener('click', toggleMobileSidebar);
-    }
-    if (toggleTopbar) {
-        toggleTopbar.addEventListener('click', function() {
-            if (window.innerWidth < 992) {
-                toggleMobileSidebar();
-            } else {
-                toggleSidebar();
-            }
-        });
     }
     if (overlay) {
         overlay.addEventListener('click', closeMobileSidebar);

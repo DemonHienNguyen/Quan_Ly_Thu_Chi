@@ -1,3 +1,4 @@
+from io import BytesIO, TextIOWrapper
 import time
 from datetime import date
 from decimal import Decimal
@@ -311,6 +312,8 @@ class ExpenseTrackerTestCase(TestCase):
         self.client.cookies['jwt_token'] = self.token_a
         response = self.client.get(reverse('dashboard'), {'month': '2026-01'})
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="sidebarToggleDesktop"')
+        self.assertNotContains(response, 'id="sidebarToggleTopbar"')
         self.assertContains(response, 'id="dashboardMonth"')
         self.assertNotContains(response, 'Tháng trước')
         self.assertNotContains(response, 'Xem tháng')
@@ -440,7 +443,13 @@ class ExpenseTrackerTestCase(TestCase):
     def test_desktop_initialization_seeds_categories_without_demo_accounts(self):
         """Desktop first run creates usable categories without test accounts or private data."""
         existing_user_count = User.objects.count()
-        call_command('seed_data', defaults_only=True, verbosity=0)
+        cp1252_output = TextIOWrapper(BytesIO(), encoding='cp1252')
+        call_command(
+            'seed_data',
+            defaults_only=True,
+            verbosity=0,
+            stdout=cp1252_output,
+        )
 
         seeded_categories = [
             "Tiền lương / Làm thêm", "Phụ cấp gia đình", "Học bổng",
